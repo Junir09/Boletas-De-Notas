@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { api } from '../api';
+import * as XLSX from 'xlsx';
 // Solo importar y exportar alumnos. La importación guarda automáticamente en BD.
 
 function RegistrarEstudiantes() {
@@ -35,13 +36,31 @@ function RegistrarEstudiantes() {
   };
 
   const exportCSV = () => {
-    const header = 'DNI,Apellidos y nombres\n';
-    const body = rows.map(r => `${r.dni},${`${r.apellidos} ${r.nombres}`.trim()}`).join('\n');
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'estudiantes.csv'; a.click();
-    URL.revokeObjectURL(url);
+    const doExport = (list) => {
+      const bom = '\ufeff'; // BOM para compatibilidad con Excel y UTF-8
+      const header = ['DNI','Apellidos y nombres'];
+      const lines = [header]
+        .concat(list.map(r => [r.dni, `${r.apellidos} ${r.nombres}`.trim()]))
+        .map(cols => cols.map(csvEscape).join(','));
+      const csv = bom + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'estudiantes.csv'; a.click();
+      URL.revokeObjectURL(url);
+    };
+    if (rows.length > 0) {
+      doExport(rows);
+    } else {
+      // Si no hay filas cargadas, exportar desde la BD
+      fetch(api('/api/estudiantes'))
+        .then(r => r.json())
+        .then(j => {
+          if (j && j.ok && Array.isArray(j.data) && j.data.length > 0) doExport(j.data);
+          else setModal({ visible: true, type: 'error', message: 'No hay datos para exportar' });
+        })
+        .catch(() => setModal({ visible: true, type: 'error', message: 'No se pudo obtener datos de la BD' }));
+    }
   };
 
   const importFile = async (e) => {
@@ -51,28 +70,10 @@ function RegistrarEstudiantes() {
     try {
       if (name.endsWith('.csv')) {
         const text = await file.text();
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        const [, ...data] = lines; // skip header
-        const parsed = data.map(line => {
-          const parts = line.split(',');
-          const d = (parts[0] || '').trim();
-          if (parts.length >= 3) {
-            const a = (parts[1] || '').trim();
-            const n = (parts[2] || '').trim();
-            return { dni: d, apellidos: a, nombres: n };
-          }
-          if (parts.length === 2) {
-            const full = (parts[1] || '').trim();
-            const { apellidos, nombres } = splitFullName(full);
-            return { dni: d, apellidos, nombres };
-          }
-          return { dni: '', apellidos: '', nombres: '' };
-        }).filter(x => x.dni && x.apellidos && x.nombres);
+        const parsed = parseCsv(text);
         setRows(parsed);
         await saveToDb(parsed);
       } else if (name.endsWith('.xlsx')) {
-        // Carga perezosa de xlsx si está instalada
-        const XLSX = await import('xlsx').then(m => m.default || m);
         const data = await file.arrayBuffer();
         const wb = XLSX.read(data, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -124,23 +125,92 @@ function RegistrarEstudiantes() {
 
   const exportXLSX = async () => {
     try {
-      const XLSX = await import('xlsx').then(m => m.default || m);
-      const header = [['DNI','Apellidos y nombres']];
-      const data = rows.map(r => [r.dni, `${r.apellidos} ${r.nombres}`.trim()]);
-      const ws = XLSX.utils.aoa_to_sheet([...header, ...data]);
-      const maxDni = Math.max('DNI'.length, ...data.map(r => String(r[0]).length));
-      const maxFull = Math.max('Apellidos y nombres'.length, ...data.map(r => String(r[1]).length));
-      ws['!cols'] = [
-        { wch: Math.max(8, maxDni) },
-        { wch: Math.min(60, Math.max(15, maxFull)) }
-      ];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Estudiantes');
-      XLSX.writeFile(wb, 'estudiantes.xlsx');
+      const doExportXlsx = (list) => {
+        const header = [['DNI','Apellidos y nombres']];
+        const data = list.map(r => [r.dni, `${r.apellidos} ${r.nombres}`.trim()]);
+        const ws = XLSX.utils.aoa_to_sheet([...header, ...data]);
+        const maxDni = Math.max('DNI'.length, ...data.map(r => String(r[0]).length));
+        const maxFull = Math.max('Apellidos y nombres'.length, ...data.map(r => String(r[1]).length));
+        ws['!cols'] = [
+          { wch: Math.max(8, maxDni) },
+          { wch: Math.min(60, Math.max(15, maxFull)) }
+        ];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Estudiantes');
+        XLSX.writeFile(wb, 'estudiantes.xlsx');
+      };
+      if (rows.length > 0) {
+        doExportXlsx(rows);
+      } else {
+        const resp = await fetch(api('/api/estudiantes'));
+        const json = await resp.json();
+        if (resp.ok && json.ok && Array.isArray(json.data) && json.data.length > 0) {
+          doExportXlsx(json.data);
+        } else {
+          setModal({ visible: true, type: 'error', message: 'No hay datos para exportar' });
+        }
+      }
     } catch (err) {
       console.error(err);
       setError('No se pudo exportar a Excel. ¿Está instalada la librería xlsx?');
     }
+  };
+
+  // CSV helpers: parser con comillas/BOM y escape seguro
+  const parseCsv = (text) => {
+    let t = String(text || '');
+    if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1); // quitar BOM
+    const lines = t.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length === 0) return [];
+    // Detectar separador: si el header tiene más ';' que ',' usar ';'
+    const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+    const header = parseCsvLine(lines[0], sep);
+    const lower = header.map(h => h.toLowerCase());
+    const dniIdx = lower.indexOf('dni');
+    const anIdx = lower.indexOf('apellidos y nombres');
+    const aIdx = lower.indexOf('apellidos');
+    const nIdx = lower.indexOf('nombres');
+    const hasApellidosNombres = anIdx !== -1;
+    return lines.slice(1).map(line => {
+      const cols = parseCsvLine(line, sep);
+      const dni = (cols[dniIdx] || '').trim();
+      if (hasApellidosNombres) {
+        const full = (cols[anIdx] || '').trim();
+        const { apellidos, nombres } = splitFullName(full);
+        return { dni, apellidos, nombres };
+      }
+      const apellidos = (cols[aIdx] || '').trim();
+      const nombres = (cols[nIdx] || '').trim();
+      return { dni, apellidos, nombres };
+    }).filter(x => x.dni && x.apellidos && x.nombres);
+  };
+
+  const parseCsvLine = (line, sep = ',') => {
+    const out = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+        } else {
+          cur += ch;
+        }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === sep) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+
+  const csvEscape = (v) => {
+    const s = String(v ?? '');
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
   };
 
   return (

@@ -1,0 +1,9 @@
+{
+  "name": "boletas-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API backend para Boletas (Express + MySQL)",
+  "scripts": {
+    "start": "node index.js"
+  }
+}

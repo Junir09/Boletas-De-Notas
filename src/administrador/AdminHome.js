@@ -3,6 +3,8 @@ import RegistrarEstudiantes from './RegistrarEstudiantes';
 import RegistrarDocentes from './RegistrarDocentes';
 import ListaEstudiantes from './ListaEstudiantes';
 import ListaDocentes from './ListaDocentes';
+import ConfiguracionSistema from './ConfiguracionSistema';
+import Cursos from './Cursos';
 
 function AdminHome() {
   const [vista, setVista] = useState('inicio');
@@ -20,6 +22,8 @@ function AdminHome() {
           <button onClick={() => ir('registrar_docentes')}>Registrar docentes</button>
           <button onClick={() => ir('lista_estudiantes')}>Lista de estudiantes</button>
           <button onClick={() => ir('lista_docentes')}>Lista de docentes</button>
+          <button onClick={() => ir('config')}>Configuración del sistema</button>
+          <button onClick={() => ir('cursos')}>Cursos</button>
           <button onClick={cerrarSesion}>Cerrar sesión</button>
         </nav>
       </aside>
@@ -35,6 +39,8 @@ function AdminHome() {
         {vista === 'registrar_docentes' && <RegistrarDocentes />}
         {vista === 'lista_estudiantes' && <ListaEstudiantes />}
         {vista === 'lista_docentes' && <ListaDocentes />}
+        {vista === 'config' && <ConfiguracionSistema />}
+        {vista === 'cursos' && <Cursos />}
       </main>
     </div>
   );

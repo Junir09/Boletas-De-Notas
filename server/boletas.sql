@@ -29,15 +29,24 @@ CREATE TABLE IF NOT EXISTS `estudiantes` (
   UNIQUE KEY `uniq_estudiantes_dni` (`dni`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: boletas (códigos de acceso para alumnos)
-CREATE TABLE IF NOT EXISTS `boletas` (
+-- Tabla: cursos
+CREATE TABLE IF NOT EXISTS `cursos` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `codigo` VARCHAR(64) NOT NULL,
-  `dni` VARCHAR(20) NOT NULL,
-  `estado` ENUM('activo','inactivo') NOT NULL DEFAULT 'activo',
+  `nombre` VARCHAR(120) NOT NULL,
+  `descripcion` VARCHAR(255) NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_boletas_codigo` (`codigo`),
-  KEY `idx_boletas_dni` (`dni`)
+  UNIQUE KEY `uniq_cursos_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: docente_curso (asignaciones)
+CREATE TABLE IF NOT EXISTS `docente_curso` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `dni` VARCHAR(20) NOT NULL,
+  `curso_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_docente_curso` (`dni`,`curso_id`),
+  KEY `idx_docente_curso_dni` (`dni`),
+  KEY `idx_docente_curso_curso` (`curso_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Ejemplos de inserciones (puedes ajustar según tus datos reales)
@@ -53,10 +62,15 @@ INSERT INTO `estudiantes` (`dni`, `apellidos`, `nombres`) VALUES
 ('44556677', 'Gómez Ramírez', 'Carlos'),
 ('99887766', 'Suárez Díaz', 'Ana');
 
--- Boletas (asociadas por DNI)
-INSERT INTO `boletas` (`codigo`, `dni`, `estado`) VALUES
-('BOLETA-44556677', '44556677', 'activo'),
-('BOLETA-99887766', '99887766', 'activo');
+-- Cursos
+INSERT INTO `cursos` (`nombre`, `descripcion`) VALUES
+('Matemática', 'Curso de Matemática básica'),
+('Lenguaje', 'Curso de Lenguaje y Comunicación');
+
+-- Asignaciones de cursos a docentes (asumiendo IDs autogenerados)
+INSERT INTO `docente_curso` (`dni`, `curso_id`) VALUES
+('12345678', 1),
+('87654321', 2);
 
 -- Si prefieres insertar con `id` explícito (no recomendado con AUTO_INCREMENT),
 -- usa este formato:

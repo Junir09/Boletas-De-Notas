@@ -14,7 +14,7 @@ function RegistrarDocentes() {
     const desc = descripcion.trim();
     setError(''); setSuccess('');
     if (!d || !full) { setError('Completa DNI y Apellidos y nombres'); return; }
-    if (!/^\d{8,}$/.test(d)) { setError('DNI debe tener al menos 8 dígitos'); return; }
+    if (!/^\d{8,}$/.test(d)) { setError('DNI debe tener 8 dígitos'); return; }
     try {
       const resp = await fetch(api('/api/docentes'), {
         method: 'POST',
@@ -39,19 +39,19 @@ function RegistrarDocentes() {
 
   return (
     <div>
-      <h2>Registrar Docentes</h2>
-      <p>Completa los campos. (CSV y listado fueron retirados)</p>
+      <h2>Sistema De Registro De Docente</h2>
+      <p>Registra al Docente en el Sistema</p>
 
       <div className="field">
         <label>DNI</label>
-        <input type="text" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="DNI (8+ dígitos)" inputMode="numeric" />
+        <input type="text" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="DNI" inputMode="numeric" maxLength={8} />
       </div>
       <div className="field">
-        <label>Apellidos y nombres</label>
+        <label>Apellido y nombre</label>
         <input type="text" value={apellidosNombres} onChange={(e) => setApellidosNombres(e.target.value)} placeholder="Apellidos y nombres" />
       </div>
       <div className="field">
-        <label>Descripción (opcional)</label>
+        <label>Descripción o Cargo Del Docente(opcional)</label>
         <input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Descripción" />
       </div>
 

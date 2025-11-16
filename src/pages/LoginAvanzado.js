@@ -57,7 +57,14 @@ function LoginAvanzado({ onSuccess }) {
           <input
             type="text"
             value={usuario}
-            onChange={(e) => setUsuario(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^\d+$/.test(v)) {
+                setUsuario(v.slice(0, 8));
+              } else {
+                setUsuario(v);
+              }
+            }}
             placeholder="Ingresa tu DNI o usuario"
             inputMode="text"
           />
@@ -80,8 +87,8 @@ function LoginAvanzado({ onSuccess }) {
         </div>
         
         <div className="footnote">
-          ¿Quieres volver alas bolesta del estudiante?
-          <a href="/" style={{ marginLeft: 6 }}>Ir a las Boletas</a>
+          ¿Quieres volver al inicio?
+          <a href="/" style={{ marginLeft: 6 }}>Ir al inicio</a>
         </div>
       </form>
     </div>

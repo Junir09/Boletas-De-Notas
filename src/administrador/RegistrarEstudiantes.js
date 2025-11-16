@@ -147,12 +147,20 @@ function RegistrarEstudiantes() {
         if (resp.ok && json.ok && Array.isArray(json.data) && json.data.length > 0) {
           doExportXlsx(json.data);
         } else {
-          setModal({ visible: true, type: 'error', message: 'No hay datos para exportar' });
+          doExportXlsx([]);
         }
       }
     } catch (err) {
       console.error(err);
-      setError('No se pudo exportar a Excel. ¿Está instalada la librería xlsx?');
+      try {
+        const header = [['DNI','Apellidos y nombres']];
+        const ws = XLSX.utils.aoa_to_sheet(header);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Estudiantes');
+        XLSX.writeFile(wb, 'estudiantes.xlsx');
+      } catch (e) {
+        setError('No se pudo exportar a Excel. ¿Está instalada la librería xlsx?');
+      }
     }
   };
 
@@ -215,8 +223,10 @@ function RegistrarEstudiantes() {
 
   return (
     <div>
-      <h2>Registrar Estudiantes</h2>
-      <p>Importa o exporta alumnos desde Excel (.xlsx) o CSV con columnas: DNI y "Apellidos y nombres"</p>
+      <h2>Sistema De Registro De Estudiantes</h2>
+      <p>Por favor, exporte nuestra plantilla de Excel y proceda 
+        a completar los datos correspondientes de los estudiantes que requiere el sistema. Una vez ingresada toda la información solicitada, podrá importar nuevamente el archivo al sistema para continuar con el proceso.
+      </p>
 
       <div className="field">
         <input type="file" accept=".xlsx,.csv" onChange={importFile} ref={fileRef} />

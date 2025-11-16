@@ -12,7 +12,7 @@ async function ensureSchema() {
       'CREATE TABLE IF NOT EXISTS cursos (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nombre VARCHAR(120) NOT NULL, descripcion VARCHAR(255) NULL, PRIMARY KEY (id), UNIQUE KEY uniq_cursos_nombre (nombre)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
     await pool.query(
-      'CREATE TABLE IF NOT EXISTS docente_curso (id INT UNSIGNED NOT NULL AUTO_INCREMENT, dni VARCHAR(20) NOT NULL, curso_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_docente_curso (dni, curso_id), KEY idx_docente_curso_dni (dni), KEY idx_docente_curso_curso (curso_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+      'CREATE TABLE IF NOT EXISTS docente_curso (id INT UNSIGNED NOT NULL AUTO_INCREMENT, dni VARCHAR(20) NOT NULL, curso_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_docente_curso (dni, curso_id), UNIQUE KEY uniq_curso_unico (curso_id), KEY idx_docente_curso_dni (dni), KEY idx_docente_curso_curso (curso_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
   } catch (e) {
     console.error('Schema error:', e.message);
@@ -29,7 +29,8 @@ app.get('/', (req, res) => {
 // Docentes
 app.get('/api/docentes', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT dni, nombre, descripcion FROM docente ORDER BY nombre');
+    const sql = 'SELECT d.dni, d.nombre, d.descripcion, d.password, x.cursos FROM docente d LEFT JOIN (SELECT dc.dni, GROUP_CONCAT(c.nombre ORDER BY c.nombre SEPARATOR ", ") AS cursos FROM docente_curso dc JOIN cursos c ON c.id = dc.curso_id GROUP BY dc.dni) x ON x.dni COLLATE utf8mb4_unicode_ci = d.dni COLLATE utf8mb4_unicode_ci ORDER BY d.nombre';
+    const [rows] = await pool.query(sql);
     res.json({ ok: true, data: rows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -40,6 +41,15 @@ app.get('/api/docentes', async (req, res) => {
 app.get('/api/cursos', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT id, nombre, descripcion FROM cursos ORDER BY nombre');
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get('/api/cursos/disponibles', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, nombre, descripcion FROM cursos WHERE id NOT IN (SELECT curso_id FROM docente_curso) ORDER BY nombre');
     res.json({ ok: true, data: rows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -92,10 +102,26 @@ app.post('/api/asignaciones', async (req, res) => {
     res.json({ ok: true, id: result.insertId });
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ ok: false, error: 'Ya asignado' });
+      res.status(409).json({ ok: false, error: 'Curso ya asignado a otro docente' });
     } else {
       res.status(500).json({ ok: false, error: e.message });
     }
+  }
+});
+
+app.delete('/api/asignaciones', async (req, res) => {
+  const { dni, curso_id } = req.body || {};
+  const d = String(dni || '').trim();
+  const c = Number(curso_id);
+  if (!d || !c) return res.status(400).json({ ok: false, error: 'Faltan dni y curso_id' });
+  try {
+    const [result] = await pool.query('DELETE FROM docente_curso WHERE dni = ? AND curso_id = ?', [d, c]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ ok: false, error: 'Asignación no existe' });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

@@ -15,7 +15,7 @@ function Cursos() {
   const cargarDatos = async () => {
     try {
       const [rc, rd] = await Promise.all([
-        fetch(api('/api/cursos')),
+        fetch(api('/api/cursos/disponibles')),
         fetch(api('/api/docentes')),
       ]);
       const jc = await rc.json();

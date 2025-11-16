@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { api } from '../api';
 import * as XLSX from 'xlsx';
+
 // Solo importar y exportar alumnos. La importación guarda automáticamente en BD.
 
 function RegistrarEstudiantes() {

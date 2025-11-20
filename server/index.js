@@ -143,6 +143,42 @@ app.post('/api/docentes', async (req, res) => {
   }
 });
 
+// Actualizar docente
+app.put('/api/docentes/:dni', async (req, res) => {
+  const dni = String(req.params.dni || '').trim();
+  const { nombre, descripcion, password } = req.body || {};
+  if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
+  try {
+    const [rows] = await pool.query('SELECT dni FROM docente WHERE dni = ? LIMIT 1', [dni]);
+    if (rows.length === 0) return res.status(404).json({ ok: false, error: 'Docente no existe' });
+    const fields = [];
+    const params = [];
+    if (typeof nombre === 'string' && nombre.trim()) { fields.push('nombre = ?'); params.push(nombre.trim()); }
+    if (typeof descripcion === 'string') { fields.push('descripcion = ?'); params.push(descripcion.trim() || null); }
+    if (typeof password === 'string' && password.trim()) { fields.push('password = ?'); params.push(password.trim()); }
+    if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
+    params.push(dni);
+    const [result] = await pool.query(`UPDATE docente SET ${fields.join(', ')} WHERE dni = ?`, params);
+    res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Eliminar docente (incluye limpieza de asignaciones)
+app.delete('/api/docentes/:dni', async (req, res) => {
+  const dni = String(req.params.dni || '').trim();
+  if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
+  try {
+    await pool.query('DELETE FROM docente_curso WHERE dni = ?', [dni]);
+    const [result] = await pool.query('DELETE FROM docente WHERE dni = ?', [dni]);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Docente no existe' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // Redundante: asegurar ruta /api/cursos registrada
 app.get('/api/cursos', async (req, res) => {
   try {
@@ -163,6 +199,25 @@ app.get('/api/estudiantes', async (req, res) => {
   }
 });
 
+// Crear estudiante (individual)
+app.post('/api/estudiantes', async (req, res) => {
+  const { dni, apellidos, nombres } = req.body || {};
+  const d = String(dni || '').trim();
+  const a = String(apellidos || '').trim();
+  const n = String(nombres || '').trim();
+  if (!d || !a || !n) return res.status(400).json({ ok: false, error: 'Faltan dni, apellidos y nombres' });
+  try {
+    const [result] = await pool.query('INSERT INTO estudiantes (dni, apellidos, nombres) VALUES (?, ?, ?)', [d, a, n]);
+    res.json({ ok: true, id: result.insertId });
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ ok: false, error: 'DNI ya registrado' });
+    } else {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+});
+
 app.post('/api/estudiantes/bulk', async (req, res) => {
   const { estudiantes } = req.body || {};
   if (!Array.isArray(estudiantes)) {
@@ -179,6 +234,40 @@ app.post('/api/estudiantes/bulk', async (req, res) => {
     const [result] = await pool.query(sql, [values]);
     const affected = result.affectedRows;
     res.json({ ok: true, count: values.length, affected });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Actualizar estudiante
+app.put('/api/estudiantes/:dni', async (req, res) => {
+  const dni = String(req.params.dni || '').trim();
+  const { apellidos, nombres } = req.body || {};
+  if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
+  try {
+    const [rows] = await pool.query('SELECT dni FROM estudiantes WHERE dni = ? LIMIT 1', [dni]);
+    if (rows.length === 0) return res.status(404).json({ ok: false, error: 'Estudiante no existe' });
+    const fields = [];
+    const params = [];
+    if (typeof apellidos === 'string' && apellidos.trim()) { fields.push('apellidos = ?'); params.push(apellidos.trim()); }
+    if (typeof nombres === 'string' && nombres.trim()) { fields.push('nombres = ?'); params.push(nombres.trim()); }
+    if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
+    params.push(dni);
+    const [result] = await pool.query(`UPDATE estudiantes SET ${fields.join(', ')} WHERE dni = ?`, params);
+    res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Eliminar estudiante
+app.delete('/api/estudiantes/:dni', async (req, res) => {
+  const dni = String(req.params.dni || '').trim();
+  if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
+  try {
+    const [result] = await pool.query('DELETE FROM estudiantes WHERE dni = ?', [dni]);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Estudiante no existe' });
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }

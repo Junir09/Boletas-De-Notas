@@ -1,0 +1,39 @@
+/* Registrar Estudiantes Section */
+
+.actions-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--color-card-bg);
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  min-width: 280px;
+  box-shadow: var(--shadow-strong);
+}
+
+.modal-card h4 { margin-top: 0; }
+.modal-card p { margin-bottom: 1rem; }
+.modal-actions { text-align: right; }
+
+.table-wrap { margin-top: 1rem; overflow-x: auto; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.table-wrap th, .table-wrap td { border: 1px solid #ddd; padding: 0.5rem 0.6rem; text-align: left; }
+.table-wrap th { background: #f7f7f7; font-weight: 600; }
+
+.inline-actions { display: flex; gap: 0.5rem; align-items: center; }
+.inline-actions button { padding: 0.35rem 0.6rem; font-size: 0.9rem; }
+
+.edit-input { width: 100%; padding: 0.35rem 0.5rem; font-size: 0.95rem; }

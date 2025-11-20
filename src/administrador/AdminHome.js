@@ -7,7 +7,10 @@ import ListaEstudiantes from './ListaEstudiantes';
 import ListaDocentes from './ListaDocentes';
 import ConfiguracionSistema from './ConfiguracionSistema';
 import Cursos from './Cursos';
-import '../assets/css/adminhome.css';
+import '../assets/css/admin/layout.css';
+import '../assets/css/admin/sidebar.css';
+import '../assets/css/admin/components.css';
+import '../assets/css/admin/inicio.css';
 function AdminHome() {
   const [vista, setVista] = useState('inicio');
 

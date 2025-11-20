@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/admin/cursos.css';
 import { api } from '../api';
 
 function Cursos() {
@@ -78,11 +79,11 @@ function Cursos() {
         <label>Descripción (opcional)</label>
         <input type="text" value={descripcionCurso} onChange={(e) => setDescripcionCurso(e.target.value)} placeholder="Descripción" />
       </div>
-      <div className="actions" style={{ display: 'flex', gap: '1rem' }}>
+      <div className="actions actions-row">
         <button type="button" onClick={crearCurso}>Crear curso</button>
       </div>
 
-      <hr style={{ margin: '16px 0' }} />
+      <hr className="divider" />
 
       <h3>Asignar curso a docente</h3>
       <div className="field">
@@ -103,16 +104,16 @@ function Cursos() {
           ))}
         </select>
       </div>
-      <div className="actions" style={{ display: 'flex', gap: '1rem' }}>
+      <div className="actions actions-row">
         <button type="button" onClick={asignarCurso}>Asignar</button>
       </div>
 
       {modal.visible && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: 6, minWidth: 280, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-            <h4 style={{ marginTop: 0 }}>{modal.type === 'success' ? 'Operación exitosa' : 'Error'}</h4>
-            <p style={{ marginBottom: '1rem' }}>{modal.message}</p>
-            <div style={{ textAlign: 'right' }}>
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h4>{modal.type === 'success' ? 'Operación exitosa' : 'Error'}</h4>
+            <p>{modal.message}</p>
+            <div className="modal-actions">
               <button type="button" onClick={closeModal}>OK</button>
             </div>
           </div>

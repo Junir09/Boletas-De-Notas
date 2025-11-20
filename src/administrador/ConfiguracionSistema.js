@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/admin/configuracion.css';
 
 function ConfiguracionSistema() {
   const [welcomeTitle, setWelcomeTitle] = useState('');
@@ -51,16 +52,16 @@ function ConfiguracionSistema() {
         <label>Logo</label>
         <input type="file" accept="image/*" onChange={onFile} />
         {logoDataUrl && (
-          <div style={{ marginTop: 8 }}>
-            <img src={logoDataUrl} alt="Logo" style={{ maxWidth: 220, height: 'auto', display: 'block' }} />
-            <button type="button" onClick={limpiarLogo} style={{ marginTop: 6 }}>Quitar logo</button>
+          <div className="logo-preview">
+            <img src={logoDataUrl} alt="Logo" className="logo-img" />
+            <button type="button" onClick={limpiarLogo} className="logo-remove">Quitar logo</button>
           </div>
         )}
       </div>
-      <div className="actions" style={{ marginTop: 12 }}>
+      <div className="actions actions-space">
         <button type="button" onClick={guardar}>Guardar</button>
       </div>
-      {status && <div style={{ marginTop: 10 }}>{status}</div>}
+      {status && <div className="status-msg">{status}</div>}
     </div>
   );
 }

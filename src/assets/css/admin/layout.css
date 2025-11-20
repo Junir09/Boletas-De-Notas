@@ -1,0 +1,38 @@
+/* Admin Layout & Content */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-fondo);
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  background: var(--color-fondo);
+  font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.content {
+  background: var(--color-fondo);
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.content h1 {
+  margin-top: 0;
+  font-size: 28px;
+  color: var(--color-text-strong);
+  letter-spacing: 0.2px;
+}
+
+.content p {
+  color: var(--color-text);
+  font-size: 14px;
+  margin-bottom: 10px;
+}

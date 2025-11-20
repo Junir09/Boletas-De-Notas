@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/admin/lista-estudiantes.css';
 import { api } from '../api';
 
 function ListaEstudiantes() {
@@ -30,9 +31,9 @@ function ListaEstudiantes() {
     <div>
       <h2>Lista de estudiantes</h2>
       {loading && <p>Cargando...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p className="status-error">Error: {error}</p>}
       {!loading && !error && (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -49,7 +50,7 @@ function ListaEstudiantes() {
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={2} style={{ textAlign: 'center' }}>No hay estudiantes registrados.</td>
+                  <td colSpan={2} className="empty-state">No hay estudiantes registrados.</td>
                 </tr>
               )}
             </tbody>

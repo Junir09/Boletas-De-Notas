@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/admin/lista-docentes.css';
 import { api } from '../api';
 
 function ListaDocentes() {
@@ -73,9 +74,9 @@ function ListaDocentes() {
     <div>
       <h2>Lista de docentes</h2>
       {loading && <p>Cargando...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p className="status-error">Error: {error}</p>}
       {!loading && !error && (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -104,9 +105,9 @@ function ListaDocentes() {
                     <tr>
                       <td colSpan={6}>
                         {loadingCursos && <p>Cargando cursos asignados...</p>}
-                        {errorCursos && <p style={{ color: 'red' }}>Error: {errorCursos}</p>}
+                        {errorCursos && <p className="status-error">Error: {errorCursos}</p>}
                         {!loadingCursos && !errorCursos && (
-                          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                          <div className="inline-actions">
                             <label>Curso asignado</label>
                             <select value={cursoQuitarId || ''} onChange={(e) => setCursoQuitarId(Number(e.target.value) || 0)}>
                               <option value="">Selecciona curso</option>
@@ -124,7 +125,7 @@ function ListaDocentes() {
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>No hay docentes registrados.</td>
+                  <td colSpan={6} className="empty-state">No hay docentes registrados.</td>
                 </tr>
               )}
             </tbody>

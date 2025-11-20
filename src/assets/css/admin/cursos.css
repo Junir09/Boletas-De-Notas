@@ -1,0 +1,35 @@
+/* Cursos Section */
+
+.actions-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--color-card-bg);
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  min-width: 280px;
+  box-shadow: var(--shadow-strong);
+}
+
+.modal-card h4 { margin-top: 0; }
+.modal-card p { margin-bottom: 1rem; }
+.modal-actions { text-align: right; }

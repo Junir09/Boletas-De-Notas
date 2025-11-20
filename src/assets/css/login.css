@@ -7,7 +7,7 @@ html, body {
   height: 100%;
   width: 100%;
   box-sizing: border-box;
-  background: #f5f7fb; /* color de fondo general */
+  background: var(--color-fondo); /* color de fondo general */
 }
 
 *, *::before, *::after {
@@ -22,7 +22,7 @@ html, body {
 /* Fondo gris minimalista */
 .login-wrapper {
   min-height: 100vh;
-  background: #e5e7eb; 
+  background: var(--color-fondo-alt); 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -33,10 +33,10 @@ html, body {
 .login-card {
   width: 100%;
   max-width: 420px;
-  background: #ffffff;
+  background: var(--color-card-bg);
   padding: 32px 28px;
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-weak);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -48,13 +48,13 @@ html, body {
   text-align: center;
   font-size: 22px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-strong);
 }
 
 .login-card p {
   margin: 0;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
@@ -68,22 +68,22 @@ html, body {
 .field label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-label);
 }
 
 /* Inputs minimalistas */
 .field input {
   padding: 11px 12px;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   font-size: 15px;
   outline: none;
   transition: 0.2s;
 }
 
 .field input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
 }
 
 /* Botón */
@@ -92,8 +92,8 @@ html, body {
   padding: 11px;
   border: none;
   border-radius: 10px;
-  background: #2563eb;
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-white);
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
@@ -101,16 +101,16 @@ html, body {
 }
 
 .actions button:hover {
-  background: #1d4ed8;
+  background: var(--color-accent-hover);
 }
 
 /* Error elegante */
 .error {
-  background: #fff8db;
-  border-left: 4px solid #d4b106;
+  background: var(--color-warning-bg);
+  border-left: 4px solid var(--color-warning-border);
   padding: 10px 12px;
   font-size: 14px;
-  color: #735f2a;
+  color: var(--color-warning-text);
   border-radius: 8px;
 }
 
@@ -118,10 +118,10 @@ html, body {
 .footnote {
   text-align: center;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .footnote a {
-  color: #2563eb;
+  color: var(--color-accent);
   text-decoration: none;
 }

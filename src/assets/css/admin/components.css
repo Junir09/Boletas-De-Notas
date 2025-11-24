@@ -73,3 +73,11 @@ button[type="submit"]:focus-visible { outline: none; box-shadow: var(--shadow-fo
 }
 .field input:focus,
 .field select:focus { border-color: var(--color-accent); box-shadow: var(--shadow-focus); }
+
+/* Acciones en línea */
+.inline-actions { display: flex; gap: 0.5rem; align-items: center; }
+.inline-actions button { display: inline-flex; align-items: center; gap: 6px; padding: 0.35rem 0.6rem; }
+
+/* Estados comunes */
+.status-error { color: var(--color-error); }
+.status-success { color: var(--color-success); }

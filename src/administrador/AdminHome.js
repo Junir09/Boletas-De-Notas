@@ -7,9 +7,9 @@ import ListaEstudiantes from './ListaEstudiantes';
 import ListaDocentes from './ListaDocentes';
 import ConfiguracionSistema from './ConfiguracionSistema';
 import Cursos from './Cursos';
+import AsignarGrados from './AsignarGrados';
 import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
-import '../assets/css/admin/components.css';
 import '../assets/css/admin/inicio.css';
 function AdminHome() {
   const [vista, setVista] = useState('inicio');
@@ -51,6 +51,11 @@ function AdminHome() {
             <span>Lista docentes</span>
           </button>
 
+          <button className={vista === 'asignar_grados' ? 'active' : ''} onClick={() => ir('asignar_grados')}>
+            <GraduationCap size={18} />
+            <span>Asignar grados</span>
+          </button>
+
           <button className={vista === 'cursos' ? 'active' : ''} onClick={() => ir('cursos')}>
             <BookOpen size={18} />
             <span>Cursos</span>
@@ -84,6 +89,7 @@ function AdminHome() {
         {vista === 'lista_docentes' && <ListaDocentes />}
         {vista === 'config' && <ConfiguracionSistema />}
         {vista === 'cursos' && <Cursos />}
+        {vista === 'asignar_grados' && <AsignarGrados />}
       </main>
     </div>
   );

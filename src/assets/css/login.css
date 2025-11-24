@@ -1,23 +1,8 @@
 /* Tipografía moderna */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-/* Reset minimalista */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--color-fondo); /* color de fondo general */
-}
-
-*, *::before, *::after {
-  box-sizing: inherit;
-}
-
-* {
-  font-family: 'Inter', sans-serif;
-  box-sizing: border-box;
-}
+/* Reset minimalista (limitado) */
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
 
 /* Fondo gris minimalista */
 .login-wrapper {
@@ -59,20 +44,20 @@ html, body {
 }
 
 /* Campo */
-.field {
+.login-card .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.field label {
+.login-card .field label {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-label);
 }
 
 /* Inputs minimalistas */
-.field input {
+.login-card .field input {
   padding: 11px 12px;
   border-radius: 10px;
   border: 1px solid var(--color-border);
@@ -81,13 +66,13 @@ html, body {
   transition: 0.2s;
 }
 
-.field input:focus {
+.login-card .field input:focus {
   border-color: var(--color-accent);
   box-shadow: var(--shadow-focus);
 }
 
 /* Botón */
-.actions button {
+.login-card .actions button {
   width: 100%;
   padding: 11px;
   border: none;
@@ -100,7 +85,7 @@ html, body {
   transition: 0.2s;
 }
 
-.actions button:hover {
+.login-card .actions button:hover {
   background: var(--color-accent-hover);
 }
 

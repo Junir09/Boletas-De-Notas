@@ -1,34 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/cursos.css';
 import { api } from '../api';
+import { Edit, Trash2 } from 'lucide-react';
 
 function Cursos() {
-  const [cursos, setCursos] = useState([]);
-  const [docentes, setDocentes] = useState([]);
+  const [cursosDisponibles, setCursosDisponibles] = useState([]);
   const [nombreCurso, setNombreCurso] = useState('');
   const [descripcionCurso, setDescripcionCurso] = useState('');
-  const [dniDocente, setDniDocente] = useState('');
-  const [cursoIdAsignar, setCursoIdAsignar] = useState(0);
   const [modal, setModal] = useState({ visible: false, type: 'success', message: '' });
+  const [editId, setEditId] = useState(0);
+  const [editNombre, setEditNombre] = useState('');
+  const [editDescripcion, setEditDescripcion] = useState('');
 
   const closeModal = () => setModal({ visible: false, type: 'success', message: '' });
 
   const cargarDatos = async () => {
     try {
-      const [rc, rd] = await Promise.all([
-        fetch(api('/api/cursos/disponibles')),
-        fetch(api('/api/docentes')),
-      ]);
-      const jc = await rc.json();
-      const jd = await rd.json();
-      setCursos(jc.ok && Array.isArray(jc.data) ? jc.data : []);
-      setDocentes(jd.ok && Array.isArray(jd.data) ? jd.data : []);
+      const rDisp = await fetch(api('/api/cursos/disponibles'));
+      const jDisp = await rDisp.json();
+      setCursosDisponibles(jDisp.ok && Array.isArray(jDisp.data) ? jDisp.data : []);
     } catch (e) {
-      setModal({ visible: true, type: 'error', message: 'No se pudo cargar cursos o docentes' });
+      setModal({ visible: true, type: 'error', message: 'No se pudo cargar cursos' });
     }
   };
 
   useEffect(() => { cargarDatos(); }, []);
+  useEffect(() => {
+    const onUpdate = () => { cargarDatos(); };
+    const onFocus = () => { cargarDatos(); };
+    window.addEventListener('cursos-updated', onUpdate);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('cursos-updated', onUpdate);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
 
   const crearCurso = async () => {
     const nombre = String(nombreCurso || '').trim();
@@ -50,26 +56,57 @@ function Cursos() {
     }
   };
 
-  const asignarCurso = async () => {
-    const dni = String(dniDocente || '').trim();
-    const cid = Number(cursoIdAsignar || 0);
-    if (!dni || !cid) { setModal({ visible: true, type: 'error', message: 'Selecciona docente y curso' }); return; }
+  
+
+  const iniciarEdicion = (c) => {
+    setEditId(c.id);
+    setEditNombre(c.nombre);
+    setEditDescripcion(c.descripcion || '');
+  };
+
+  const cancelarEdicion = () => {
+    setEditId(0);
+    setEditNombre('');
+    setEditDescripcion('');
+  };
+
+  const guardarEdicion = async () => {
+    const id = Number(editId || 0);
+    const nombre = String(editNombre || '').trim();
+    const descripcion = String(editDescripcion || '').trim();
+    if (!id || !nombre) { setModal({ visible: true, type: 'error', message: 'Ingresa nombre' }); return; }
     try {
-      const resp = await fetch(api('/api/asignaciones'), {
-        method: 'POST',
+      const resp = await fetch(api(`/api/cursos/${id}`), {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dni, curso_id: cid })
+        body: JSON.stringify({ nombre, descripcion: descripcion || null })
       });
       const json = await resp.json();
-      if (!resp.ok || !json.ok) { setModal({ visible: true, type: 'error', message: json.error || 'Error al asignar' }); return; }
-      setModal({ visible: true, type: 'success', message: 'Asignación realizada' });
+      if (!resp.ok || !json.ok) { setModal({ visible: true, type: 'error', message: json.error || 'Error al actualizar' }); return; }
+      await cargarDatos();
+      cancelarEdicion();
+      setModal({ visible: true, type: 'success', message: 'Curso actualizado' });
     } catch (e) {
-      setModal({ visible: true, type: 'error', message: 'No se pudo asignar curso' });
+      setModal({ visible: true, type: 'error', message: 'No se pudo actualizar' });
+    }
+  };
+
+  const eliminarCurso = async (id) => {
+    const cid = Number(id || 0);
+    if (!cid) return;
+    try {
+      const resp = await fetch(api(`/api/cursos/${cid}`), { method: 'DELETE' });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) { setModal({ visible: true, type: 'error', message: json.error || 'Error al eliminar' }); return; }
+      await cargarDatos();
+      setModal({ visible: true, type: 'success', message: 'Curso eliminado' });
+    } catch (e) {
+      setModal({ visible: true, type: 'error', message: 'No se pudo eliminar' });
     }
   };
 
   return (
-    <div>
+    <div className="cursos">
       <h2>Gestión de Cursos</h2>
       <div className="field">
         <label>Nombre del curso</label>
@@ -85,27 +122,55 @@ function Cursos() {
 
       <hr className="divider" />
 
-      <h3>Asignar curso a docente</h3>
-      <div className="field">
-        <label>Docente</label>
-        <select value={dniDocente} onChange={(e) => setDniDocente(e.target.value)}>
-          <option value="">Selecciona docente</option>
-          {docentes.map(d => (
-            <option key={d.dni} value={d.dni}>{d.nombre} ({d.dni})</option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
-        <label>Curso</label>
-        <select value={cursoIdAsignar || ''} onChange={(e) => setCursoIdAsignar(Number(e.target.value) || 0)}>
-          <option value="">Selecciona curso</option>
-          {cursos.map(c => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          ))}
-        </select>
-      </div>
-      <div className="actions actions-row">
-        <button type="button" onClick={asignarCurso}>Asignar</button>
+      <h3>Lista de cursos disponibles</h3>
+      <div className="table">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cursosDisponibles.map(c => {
+              const enEdicion = editId === c.id;
+              return (
+                <tr key={c.id}>
+                  <td>
+                    {enEdicion ? (
+                      <input type="text" value={editNombre} onChange={(e) => setEditNombre(e.target.value)} />
+                    ) : (
+                      c.nombre
+                    )}
+                  </td>
+                  <td>
+                    {enEdicion ? (
+                      <input type="text" value={editDescripcion} onChange={(e) => setEditDescripcion(e.target.value)} />
+                    ) : (
+                      c.descripcion || ''
+                    )}
+                  </td>
+                  <td className="inline-actions">
+                    {!enEdicion ? (
+                      <button type="button" onClick={() => iniciarEdicion(c)} title="Editar">
+                        <Edit size={16} />
+                      </button>
+                    ) : (
+                      <>
+                        <button type="button" onClick={guardarEdicion}>Guardar</button>
+                        <button type="button" onClick={cancelarEdicion}>Cancelar</button>
+                      </>
+                    )}
+                    <button type="button" onClick={() => eliminarCurso(c.id)} title="Eliminar">
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {modal.visible && (

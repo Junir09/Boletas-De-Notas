@@ -1,9 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import '../assets/css/admin/registrar-estudiantes.css';
 import { api } from '../api';
 import * as XLSX from 'xlsx';
-
-// Solo importar y exportar alumnos. La importación guarda automáticamente en BD.
 
 function RegistrarEstudiantes() {
   const [rows, setRows] = useState([]);
@@ -11,25 +9,10 @@ function RegistrarEstudiantes() {
   const fileRef = useRef(null);
   const [modal, setModal] = useState({ visible: false, type: 'success', message: '' });
   const [dni, setDni] = useState('');
-  const [apellidos, setApellidos] = useState('');
-  const [nombres, setNombres] = useState('');
-  const [estudiantes, setEstudiantes] = useState([]);
-  const [editingDni, setEditingDni] = useState('');
-  const [editData, setEditData] = useState({ apellidos: '', nombres: '' });
+  const [apellidosNombres, setApellidosNombres] = useState('');
 
   const closeModal = () => setModal({ visible: false, type: 'success', message: '' });
 
-  const cargarEstudiantes = async () => {
-    try {
-      const resp = await fetch(api('/api/estudiantes'));
-      const json = await resp.json();
-      if (resp.ok && json.ok) {
-        setEstudiantes(Array.isArray(json.data) ? json.data : []);
-      }
-    } catch (_) {}
-  };
-
-  useEffect(() => { cargarEstudiantes(); }, []);
 
   // Helper: separa "Apellidos y nombres" en dos campos
   const splitFullName = (full) => {
@@ -136,7 +119,7 @@ function RegistrarEstudiantes() {
       } else {
         const savedCount = (json && (json.count ?? json.affected)) ?? data.length;
         setModal({ visible: true, type: 'success', message: `Se guardaron ${savedCount} alumnos correctamente` });
-        cargarEstudiantes();
+        
       }
     } catch (err) {
       console.error(err);
@@ -146,11 +129,12 @@ function RegistrarEstudiantes() {
 
   const crearEstudiante = async () => {
     const d = String(dni || '').trim();
-    const a = String(apellidos || '').trim();
-    const n = String(nombres || '').trim();
+    const full = String(apellidosNombres || '').trim();
     setError('');
-    if (!d || !a || !n) { setError('Completa DNI, apellidos y nombres'); return; }
+    if (!d || !full) { setError('Completa DNI y Apellidos y nombres'); return; }
     if (!/^\d{8,}$/.test(d)) { setError('DNI debe tener al menos 8 dígitos'); return; }
+    const { apellidos: a, nombres: n } = splitFullName(full);
+    if (!a || !n) { setError('Ingresa Apellidos y nombres válidos'); return; }
     try {
       const resp = await fetch(api('/api/estudiantes'), {
         method: 'POST',
@@ -162,66 +146,10 @@ function RegistrarEstudiantes() {
         setError(json.error || 'Error al crear estudiante');
       } else {
         setModal({ visible: true, type: 'success', message: 'Estudiante creado' });
-        setDni(''); setApellidos(''); setNombres('');
-        cargarEstudiantes();
+        setDni(''); setApellidosNombres('');
+        
       }
     } catch (e) {
-      setError('No se pudo conectar al servidor');
-    }
-  };
-
-  const iniciarEdicion = (d) => {
-    const row = estudiantes.find(x => String(x.dni) === String(d));
-    if (!row) return;
-    setEditingDni(String(d));
-    setEditData({ apellidos: row.apellidos || '', nombres: row.nombres || '' });
-    setError('');
-  };
-
-  const cancelarEdicion = () => {
-    setEditingDni('');
-    setEditData({ apellidos: '', nombres: '' });
-  };
-
-  const guardarEstudiante = async () => {
-    const d = String(editingDni || '').trim();
-    if (!d) return;
-    const body = {};
-    if (editData.apellidos && editData.apellidos.trim()) body.apellidos = editData.apellidos.trim();
-    if (editData.nombres && editData.nombres.trim()) body.nombres = editData.nombres.trim();
-    if (Object.keys(body).length === 0) { setError('No hay cambios para guardar'); return; }
-    try {
-      const resp = await fetch(api(`/api/estudiantes/${encodeURIComponent(d)}`), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const json = await resp.json();
-      if (!resp.ok || !json.ok) {
-        setError(json.error || 'Error al actualizar');
-      } else {
-        setModal({ visible: true, type: 'success', message: 'Estudiante actualizado' });
-        cancelarEdicion();
-        cargarEstudiantes();
-      }
-    } catch (e) {
-      setError('No se pudo conectar al servidor');
-    }
-  };
-
-  const eliminarEstudiante = async (d) => {
-    if (!window.confirm('¿Eliminar este estudiante?')) return;
-    try {
-      const resp = await fetch(api(`/api/estudiantes/${encodeURIComponent(d)}`), { method: 'DELETE' });
-      const json = await resp.json();
-      if (!resp.ok || !json.ok) {
-        setError(json.error || 'No se pudo eliminar');
-      } else {
-        setModal({ visible: true, type: 'success', message: 'Estudiante eliminado' });
-        if (String(editingDni) === String(d)) cancelarEdicion();
-        cargarEstudiantes();
-      }
-    } catch (_) {
       setError('No se pudo conectar al servidor');
     }
   };
@@ -324,41 +252,83 @@ function RegistrarEstudiantes() {
     return s;
   };
 
-  return (
-    <div>
-      <h2>Sistema De Registro De Estudiantes</h2>
-      <p>Por favor, exporte nuestra plantilla de Excel y proceda 
-        a completar los datos correspondientes de los estudiantes que requiere el sistema. Una vez ingresada toda la información solicitada, podrá importar nuevamente el archivo al sistema para continuar con el proceso.
-      </p>
+ return (
+    <div className="registrar-estudiantes">
 
-      <h3>Crear estudiante</h3>
-      <div className="field">
-        <label>DNI</label>
-        <input type="text" value={dni} onChange={e => setDni(e.target.value)} placeholder="DNI" inputMode="numeric" maxLength={8} />
-      </div>
-      <div className="field">
-        <label>Apellidos</label>
-        <input type="text" value={apellidos} onChange={e => setApellidos(e.target.value)} placeholder="Apellidos" />
-      </div>
-      <div className="field">
-        <label>Nombres</label>
-        <input type="text" value={nombres} onChange={e => setNombres(e.target.value)} placeholder="Nombres" />
-      </div>
+      {/* TITULO + DESCRIPCIÓN */}
+      <header className="header-section">
+        <h2>Sistema De Registro De Estudiantes</h2>
+        <p className="intro-text">
+          Por favor, exporte nuestra plantilla de Excel y proceda a completar los datos 
+          correspondientes. Luego podrá importarla nuevamente al sistema.
+        </p>
+      </header>
 
-      <div className="actions actions-row">
-        <button type="button" onClick={crearEstudiante}>Crear estudiante</button>
-      </div>
-      {error && <div className="status-error">{error}</div>}
+      {/* FORMULARIO MANUAL */}
+      <section className="card">
+        <h3>Crear estudiante</h3>
 
-      <div className="field">
-        <input type="file" accept=".xlsx,.csv" onChange={importFile} ref={fileRef} />
-      </div>
+        <div className="form-grid">
 
-      <div className="actions actions-row">
-        <button type="button" onClick={exportCSV}>Exportar CSV</button>
-        <button type="button" onClick={exportXLSX}>Exportar Excel (.xlsx)</button>
-      </div>
+          <div className="field">
+            <label>DNI</label>
+            <input 
+              type="text" 
+              value={dni} 
+              onChange={e => setDni(e.target.value)} 
+              placeholder="DNI" 
+              inputMode="numeric" 
+              maxLength={8} 
+            />
+          </div>
 
+          <div className="field">
+            <label>Apellidos y nombres</label>
+            <input 
+              type="text" 
+              value={apellidosNombres} 
+              onChange={e => setApellidosNombres(e.target.value)} 
+              placeholder="Apellidos y nombres" 
+            />
+          </div>
+
+        </div>
+
+        {error && <div className="status-error">{error}</div>}
+
+        <div className="actions right">
+          <button type="button" onClick={crearEstudiante}>Crear estudiante</button>
+        </div>
+      </section>
+
+
+      {/* IMPORTACIÓN */}
+      <section className="card">
+        <h3>Importar estudiantes</h3>
+
+        <label className="file-input">
+          <span>Seleccionar archivo (.csv / .xlsx)</span>
+          <input 
+            type="file" 
+            accept=".xlsx,.csv" 
+            onChange={importFile} 
+            ref={fileRef} 
+          />
+        </label>
+      </section>
+
+
+      {/* EXPORTACIÓN */}
+      <section className="card">
+        <h3>Exportar datos</h3>
+        <div className="actions-row">
+          <button type="button" onClick={exportCSV}>Exportar CSV</button>
+          <button type="button" onClick={exportXLSX}>Exportar Excel (.xlsx)</button>
+        </div>
+      </section>
+
+
+      {/* MODAL */}
       {modal.visible && (
         <div className="modal-overlay">
           <div className="modal-card">
@@ -371,54 +341,6 @@ function RegistrarEstudiantes() {
         </div>
       )}
 
-      <h3>Listado y edición</h3>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>DNI</th>
-              <th>Apellidos</th>
-              <th>Nombres</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {estudiantes.length === 0 && (
-              <tr><td colSpan={4}>No hay estudiantes</td></tr>
-            )}
-            {estudiantes.map(row => (
-              <tr key={row.dni}>
-                <td>{row.dni}</td>
-                <td>
-                  {editingDni === row.dni ? (
-                    <input className="edit-input" value={editData.apellidos} onChange={e => setEditData({ ...editData, apellidos: e.target.value })} />
-                  ) : row.apellidos}
-                </td>
-                <td>
-                  {editingDni === row.dni ? (
-                    <input className="edit-input" value={editData.nombres} onChange={e => setEditData({ ...editData, nombres: e.target.value })} />
-                  ) : row.nombres}
-                </td>
-                <td>
-                  <div className="inline-actions">
-                    {editingDni === row.dni ? (
-                      <>
-                        <button type="button" onClick={guardarEstudiante}>Guardar</button>
-                        <button type="button" onClick={cancelarEdicion}>Cancelar</button>
-                      </>
-                    ) : (
-                      <>
-                        <button type="button" onClick={() => iniciarEdicion(row.dni)}>Editar</button>
-                        <button type="button" onClick={() => eliminarEstudiante(row.dni)}>Eliminar</button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

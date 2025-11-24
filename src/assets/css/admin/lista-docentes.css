@@ -1,6 +1,0 @@
-/* Lista Docentes Section */
-
-.status-error { color: var(--color-error); }
-.table-wrap { overflow-x: auto; }
-.inline-actions { display: flex; gap: 1rem; align-items: center; }
-td.empty-state { text-align: center; }

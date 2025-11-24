@@ -42,7 +42,7 @@ function ConfiguracionSistema() {
   const limpiarLogo = () => setLogoDataUrl('');
 
   return (
-    <div>
+    <div className="configuracion">
       <h2>Configuración del Sistema</h2>
       <div className="field">
         <label>Título de bienvenida</label>

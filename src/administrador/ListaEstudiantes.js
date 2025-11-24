@@ -28,7 +28,7 @@ function ListaEstudiantes() {
   }, []);
 
   return (
-    <div>
+    <div className="lista-estudiantes">
       <h2>Lista de estudiantes</h2>
       {loading && <p>Cargando...</p>}
       {error && <p className="status-error">Error: {error}</p>}

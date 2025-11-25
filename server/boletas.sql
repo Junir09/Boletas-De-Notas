@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS `estudiantes` (
   `dni` VARCHAR(20) NOT NULL,
   `apellidos` VARCHAR(150) NOT NULL,
   `nombres` VARCHAR(150) NOT NULL,
+  `grado` TINYINT UNSIGNED NULL,
+  `seccion` VARCHAR(10) NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_estudiantes_dni` (`dni`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -49,6 +51,23 @@ CREATE TABLE IF NOT EXISTS `docente_curso` (
   KEY `idx_docente_curso_curso` (`curso_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Tabla: grados
+CREATE TABLE IF NOT EXISTS `grados` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `numero` TINYINT UNSIGNED NOT NULL,
+  `nombre` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_grados_numero` (`numero`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: secciones
+CREATE TABLE IF NOT EXISTS `secciones` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_secciones_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Ejemplos de inserciones (puedes ajustar según tus datos reales)
 -- Nota: si usas AUTO_INCREMENT, no es necesario pasar `id`.
 
@@ -66,6 +85,21 @@ INSERT INTO `estudiantes` (`dni`, `apellidos`, `nombres`) VALUES
 INSERT INTO `cursos` (`nombre`, `descripcion`) VALUES
 ('Matemática', 'Curso de Matemática básica'),
 ('Lenguaje', 'Curso de Lenguaje y Comunicación');
+
+-- Grados por defecto (1° a 6°)
+INSERT INTO `grados` (`numero`, `nombre`) VALUES
+(1, '1°'),
+(2, '2°'),
+(3, '3°'),
+(4, '4°'),
+(5, '5°'),
+(6, '6°');
+
+-- Secciones por defecto (A, B, C)
+INSERT INTO `secciones` (`nombre`) VALUES
+('A'),
+('B'),
+('C');
 
 -- Asignaciones de cursos a docentes (asumiendo IDs autogenerados)
 INSERT INTO `docente_curso` (`dni`, `curso_id`) VALUES

@@ -1,9 +1,21 @@
 {
   "name": "boletas-api",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "API backend para Boletas (Express + MySQL)",
+  "description": "API REST para Sistema de Gestión de Boletas de Notas - Express + MySQL con gestión completa de estudiantes, docentes, cursos, grados y secciones",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
-  }
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "boletas",
+    "notas",
+    "educacion",
+    "api",
+    "express",
+    "mysql"
+  ],
+  "author": "",
+  "license": "MIT"
 }

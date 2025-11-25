@@ -1,6 +1,7 @@
 {
-  "name": "mi-app",
-  "version": "0.1.0",
+  "name": "sistema-boletas-notas",
+  "version": "1.0.0",
+  "description": "Sistema completo de gestión de boletas de notas escolares con panel de administrador, docente y alumno",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",

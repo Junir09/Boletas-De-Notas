@@ -1,0 +1,124 @@
+/****************************************************
+ * LISTA ESTUDIANTES
+****************************************************/
+.lista-estudiantes {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--color-fondo);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/****************************************************
+ * HEADER
+****************************************************/
+.lista-estudiantes h2 {
+  margin: 0;
+  color: var(--color-principal);
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.lista-estudiantes > p {
+  margin: 6px 0 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/****************************************************
+ * TABLE WRAPPER
+****************************************************/
+.lista-estudiantes .table-wrap {
+  background: var(--color-card-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-weak);
+  border: 1px solid var(--color-border);
+}
+
+.lista-estudiantes .table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lista-estudiantes .table thead th {
+  text-align: left;
+  background: var(--color-fondo-alt);
+  color: var(--color-text-label);
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.lista-estudiantes .table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.lista-estudiantes .table tbody tr:hover {
+  background: var(--color-fondo-alt);
+  transition: background 0.15s ease;
+}
+
+.lista-estudiantes .table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lista-estudiantes .table .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/****************************************************
+ * STATUS
+****************************************************/
+.lista-estudiantes .status-error {
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--color-danger);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+/****************************************************
+ * BADGES
+****************************************************/
+.lista-estudiantes .badge-grado {
+  display: inline-block;
+  background: var(--color-accent);
+  color: var(--color-white);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lista-estudiantes .badge-seccion {
+  display: inline-block;
+  background: var(--color-principal);
+  color: var(--color-white);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lista-estudiantes .badge-sin-asignar {
+  display: inline-block;
+  background: var(--color-fondo-alt);
+  color: var(--color-text-muted);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-style: italic;
+}

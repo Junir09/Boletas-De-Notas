@@ -1,0 +1,120 @@
+/****************************************************
+ * REGISTRAR DOCENTES
+****************************************************/
+.registrar-docentes {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--color-fondo);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/****************************************************
+ * HEADER
+****************************************************/
+.registrar-docentes h2 {
+  margin: 0;
+  color: var(--color-principal);
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.registrar-docentes > p {
+  margin: 6px 0 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/****************************************************
+ * FIELDS
+****************************************************/
+.registrar-docentes .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.registrar-docentes .field label {
+  color: var(--color-text-label);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.registrar-docentes .field input {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-card-bg);
+  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.registrar-docentes .field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+  background: #f9fbff;
+}
+
+.registrar-docentes .field input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/****************************************************
+ * ACTIONS
+****************************************************/
+.registrar-docentes .actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.registrar-docentes button {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border: none;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+
+.registrar-docentes button:hover {
+  background: var(--color-hover);
+  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+}
+
+.registrar-docentes button:active {
+  transform: scale(0.97);
+}
+
+.registrar-docentes button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/****************************************************
+ * STATUS MESSAGES
+****************************************************/
+.registrar-docentes .status-error {
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--color-danger);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.registrar-docentes .status-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--color-success);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}

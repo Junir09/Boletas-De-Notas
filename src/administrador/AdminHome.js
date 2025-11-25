@@ -77,11 +77,75 @@ function AdminHome() {
       {/* === CONTENIDO === */}
       <main className="content">
         {vista === 'inicio' && (
-          <>
+          <div className="inicio-container">
             <h1>Panel Administrador</h1>
-            <p>Gestiona usuarios, boletas y parámetros del sistema.</p>
-            <p>Usa el menú para registrar estudiantes o docentes, importar/exportar información y más.</p>
-          </>
+            <p className="intro">Bienvenido al sistema de gestión de boletas de notas. Aquí puedes administrar estudiantes, docentes, cursos y configuraciones del sistema.</p>
+            
+            <div className="funciones-grid">
+              
+              <div className="funcion-card" onClick={() => ir('registrar_estudiantes')}>
+                <div className="funcion-icon">
+                  <UserPlus size={24} />
+                </div>
+                <h3>Registrar Estudiantes</h3>
+                <p>Registra estudiantes de forma individual o masiva mediante archivos Excel/CSV. Exporta plantillas y gestiona la información de los alumnos.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('registrar_docentes')}>
+                <div className="funcion-icon">
+                  <GraduationCap size={24} />
+                </div>
+                <h3>Registrar Docentes</h3>
+                <p>Agrega docentes al sistema con su DNI, nombre completo y descripción. El sistema genera automáticamente sus credenciales de acceso.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('lista_estudiantes')}>
+                <div className="funcion-icon">
+                  <Users size={24} />
+                </div>
+                <h3>Lista de Estudiantes</h3>
+                <p>Visualiza todos los estudiantes registrados en el sistema con su información completa: DNI, apellidos, nombres, grado y sección.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('lista_docentes')}>
+                <div className="funcion-icon">
+                  <Users size={24} />
+                </div>
+                <h3>Lista de Docentes</h3>
+                <p>Consulta y edita la información de los docentes. Asigna cursos, modifica datos personales y gestiona sus credenciales de acceso.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('asignar_grados')}>
+                <div className="funcion-icon">
+                  <GraduationCap size={24} />
+                </div>
+                <h3>Asignar Grados</h3>
+                <p>Asigna grados (1° a 6°) y secciones a los estudiantes. Busca por DNI, selecciona múltiples alumnos y promueve o baja de grado fácilmente.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('cursos')}>
+                <div className="funcion-icon">
+                  <BookOpen size={24} />
+                </div>
+                <h3>Gestión de Cursos</h3>
+                <p>Crea, edita y elimina cursos del sistema. Asigna cursos a docentes y gestiona las materias disponibles para cada grado.</p>
+              </div>
+
+              <div className="funcion-card" onClick={() => ir('config')}>
+                <div className="funcion-icon">
+                  <Settings size={24} />
+                </div>
+                <h3>Configuración del Sistema</h3>
+                <p>Personaliza el título de bienvenida, logo institucional, grados disponibles y secciones. Configura los parámetros generales del sistema.</p>
+              </div>
+
+            </div>
+
+            <div className="ayuda-section">
+              <h3>¿Necesitas ayuda?</h3>
+              <p>Usa el menú lateral para navegar entre las diferentes secciones. Cada módulo cuenta con instrucciones específicas para facilitar su uso.</p>
+            </div>
+          </div>
         )}
         {vista === 'registrar_estudiantes' && <RegistrarEstudiantes />}
         {vista === 'registrar_docentes' && <RegistrarDocentes />}

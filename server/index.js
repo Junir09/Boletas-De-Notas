@@ -29,11 +29,39 @@ async function ensureEstudianteGrado() {
     if ((rows[0] && rows[0].cnt) === 0) {
       await pool.query('ALTER TABLE estudiantes ADD COLUMN grado TINYINT UNSIGNED NULL');
     }
+    const [rows2] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "estudiantes" AND COLUMN_NAME = "seccion"'
+    );
+    if ((rows2[0] && rows2[0].cnt) === 0) {
+      await pool.query('ALTER TABLE estudiantes ADD COLUMN seccion VARCHAR(10) NULL');
+    }
   } catch (e) {
-    console.error('Ensure grado error:', e.message);
+    console.error('Ensure grado/seccion error:', e.message);
   }
 }
 ensureEstudianteGrado();
+
+async function ensureGradosYSecciones() {
+  try {
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS grados (id INT UNSIGNED NOT NULL AUTO_INCREMENT, numero TINYINT UNSIGNED NOT NULL, nombre VARCHAR(50) NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_grados_numero (numero)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS secciones (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nombre VARCHAR(10) NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_secciones_nombre (nombre)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    const [grados] = await pool.query('SELECT COUNT(*) AS cnt FROM grados');
+    if ((grados[0] && grados[0].cnt) === 0) {
+      await pool.query('INSERT INTO grados (numero, nombre) VALUES (1, "1°"), (2, "2°"), (3, "3°"), (4, "4°"), (5, "5°"), (6, "6°")');
+    }
+    const [secciones] = await pool.query('SELECT COUNT(*) AS cnt FROM secciones');
+    if ((secciones[0] && secciones[0].cnt) === 0) {
+      await pool.query('INSERT INTO secciones (nombre) VALUES ("A"), ("B"), ("C")');
+    }
+  } catch (e) {
+    console.error('Ensure grados/secciones error:', e.message);
+  }
+}
+ensureGradosYSecciones();
 
 // Healthcheck
 app.get('/', (req, res) => {
@@ -244,7 +272,7 @@ app.get('/api/cursos', async (req, res) => {
 // Estudiantes
 app.get('/api/estudiantes', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT dni, apellidos, nombres, grado FROM estudiantes ORDER BY apellidos, nombres');
+    const [rows] = await pool.query('SELECT dni, apellidos, nombres, grado, seccion FROM estudiantes ORDER BY apellidos, nombres');
     res.json({ ok: true, data: rows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -301,18 +329,24 @@ app.get('/api/estudiantes/sin-grado', async (req, res) => {
   }
 });
 
-// Asignación masiva de grado
+// Asignación masiva de grado y sección
 app.post('/api/estudiantes/grados/bulk', async (req, res) => {
-  const { grado, dnis } = req.body || {};
+  const { grado, seccion, dnis } = req.body || {};
   const g = Number(grado);
+  const sec = seccion ? String(seccion).trim() : null;
   const list = Array.isArray(dnis) ? dnis.map(d => String(d || '').trim()).filter(Boolean) : [];
   if (!g || g < 1 || g > 6) return res.status(400).json({ ok: false, error: 'Grado inválido' });
   if (list.length === 0) return res.status(400).json({ ok: false, error: 'Lista de DNI vacía' });
   const placeholders = list.map(() => '?').join(',');
   try {
-    const sql2 = `UPDATE estudiantes SET grado = ? WHERE dni IN (${placeholders})`;
-    const params = [g, ...list];
-    const [result] = await pool.query(sql2, params);
+    const fields = ['grado = ?'];
+    const params = [g];
+    if (sec) {
+      fields.push('seccion = ?');
+      params.push(sec);
+    }
+    const sql2 = `UPDATE estudiantes SET ${fields.join(', ')} WHERE dni IN (${placeholders})`;
+    const [result] = await pool.query(sql2, [...params, ...list]);
     res.json({ ok: true, affected: result.affectedRows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -322,7 +356,7 @@ app.post('/api/estudiantes/grados/bulk', async (req, res) => {
 // Actualizar estudiante
 app.put('/api/estudiantes/:dni', async (req, res) => {
   const dni = String(req.params.dni || '').trim();
-  const { apellidos, nombres, grado } = req.body || {};
+  const { apellidos, nombres, grado, seccion } = req.body || {};
   if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
   try {
     const [rows] = await pool.query('SELECT dni FROM estudiantes WHERE dni = ? LIMIT 1', [dni]);
@@ -338,6 +372,8 @@ app.put('/api/estudiantes/:dni', async (req, res) => {
         return res.status(400).json({ ok: false, error: 'Grado inválido' });
       }
     }
+    if (seccion === null) { fields.push('seccion = NULL'); }
+    else if (typeof seccion === 'string') { fields.push('seccion = ?'); params.push(seccion.trim() || null); }
     if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
     params.push(dni);
     const [result] = await pool.query(`UPDATE estudiantes SET ${fields.join(', ')} WHERE dni = ?`, params);
@@ -424,6 +460,127 @@ app.post('/api/estudiantes/grados/bajar', async (req, res) => {
     const sql = `UPDATE estudiantes SET grado = GREATEST(1, grado - 1) WHERE grado IS NOT NULL AND dni IN (${placeholders})`;
     const [result] = await pool.query(sql, list);
     res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// === GRADOS ===
+app.get('/api/grados', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, numero, nombre FROM grados ORDER BY numero');
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/grados', async (req, res) => {
+  const { numero, nombre } = req.body || {};
+  const n = Number(numero);
+  const nom = String(nombre || '').trim();
+  if (!n || n < 1 || !nom) return res.status(400).json({ ok: false, error: 'Faltan numero y nombre' });
+  try {
+    const [result] = await pool.query('INSERT INTO grados (numero, nombre) VALUES (?, ?)', [n, nom]);
+    res.json({ ok: true, id: result.insertId });
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ ok: false, error: 'Grado ya existe' });
+    } else {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+});
+
+app.put('/api/grados/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { numero, nombre } = req.body || {};
+  if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
+  const fields = [];
+  const params = [];
+  if (typeof numero !== 'undefined') {
+    const n = Number(numero);
+    if (n >= 1) { fields.push('numero = ?'); params.push(n); }
+  }
+  if (typeof nombre === 'string' && nombre.trim()) { fields.push('nombre = ?'); params.push(nombre.trim()); }
+  if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
+  try {
+    params.push(id);
+    const [result] = await pool.query(`UPDATE grados SET ${fields.join(', ')} WHERE id = ?`, params);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Grado no existe' });
+    res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ ok: false, error: 'Número de grado ya existe' });
+    } else {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+});
+
+app.delete('/api/grados/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
+  try {
+    const [result] = await pool.query('DELETE FROM grados WHERE id = ?', [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Grado no existe' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// === SECCIONES ===
+app.get('/api/secciones', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, nombre FROM secciones ORDER BY nombre');
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/secciones', async (req, res) => {
+  const { nombre } = req.body || {};
+  const nom = String(nombre || '').trim();
+  if (!nom) return res.status(400).json({ ok: false, error: 'Falta nombre' });
+  try {
+    const [result] = await pool.query('INSERT INTO secciones (nombre) VALUES (?)', [nom]);
+    res.json({ ok: true, id: result.insertId });
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ ok: false, error: 'Sección ya existe' });
+    } else {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+});
+
+app.put('/api/secciones/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { nombre } = req.body || {};
+  if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
+  if (typeof nombre !== 'string' || !nombre.trim()) return res.status(400).json({ ok: false, error: 'Falta nombre' });
+  try {
+    const [result] = await pool.query('UPDATE secciones SET nombre = ? WHERE id = ?', [nombre.trim(), id]);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Sección no existe' });
+    res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ ok: false, error: 'Nombre de sección ya existe' });
+    } else {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+});
+
+app.delete('/api/secciones/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
+  try {
+    const [result] = await pool.query('DELETE FROM secciones WHERE id = ?', [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Sección no existe' });
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }

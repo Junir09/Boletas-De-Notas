@@ -39,6 +39,8 @@ function ListaEstudiantes() {
               <tr>
                 <th>DNI</th>
                 <th>Apellidos y nombres</th>
+                <th>Grado</th>
+                <th>Sección</th>
               </tr>
             </thead>
             <tbody>
@@ -46,11 +48,25 @@ function ListaEstudiantes() {
                 <tr key={e.dni}>
                   <td>{e.dni}</td>
                   <td>{[e.apellidos, e.nombres].filter(Boolean).join(' ')}</td>
+                  <td>
+                    {e.grado ? (
+                      <span className="badge-grado">{e.grado}°</span>
+                    ) : (
+                      <span className="badge-sin-asignar">Sin asignar</span>
+                    )}
+                  </td>
+                  <td>
+                    {e.seccion ? (
+                      <span className="badge-seccion">{e.seccion}</span>
+                    ) : (
+                      <span className="badge-sin-asignar">Sin asignar</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="empty-state">No hay estudiantes registrados.</td>
+                  <td colSpan={4} className="empty-state">No hay estudiantes registrados.</td>
                 </tr>
               )}
             </tbody>

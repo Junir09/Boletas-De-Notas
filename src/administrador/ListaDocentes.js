@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/lista-docentes.css';
 import { api } from '../api';
-import { Edit, Trash2, XCircle } from 'lucide-react';
+import { Edit, Trash2, XCircle, MoreVertical, UserPlus } from 'lucide-react';
 
 function ListaDocentes() {
   const [data, setData] = useState([]);
@@ -12,6 +12,7 @@ function ListaDocentes() {
   const [loadingByDni, setLoadingByDni] = useState({});
   const [editingDni, setEditingDni] = useState('');
   const [editData, setEditData] = useState({ nombre: '', descripcion: '', password: '' });
+  const [menuAbierto, setMenuAbierto] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,6 +33,14 @@ function ListaDocentes() {
     };
     fetchData();
   }, []);
+
+  const toggleMenu = (dni) => {
+    setMenuAbierto(menuAbierto === dni ? null : dni);
+  };
+
+  const cerrarMenu = () => {
+    setMenuAbierto(null);
+  };
 
   const abrirModalAsignar = async (dni) => {
     try {
@@ -199,70 +208,87 @@ function ListaDocentes() {
             </thead>
             <tbody>
               {data.map((d) => (
-                <>
-                  <tr key={d.dni}>
-                    <td>{d.dni}</td>
-                <td>
-                  {editingDni === d.dni ? (
-                    <input className="edit-input" value={editData.nombre} onChange={e => setEditData({ ...editData, nombre: e.target.value })} />
-                  ) : d.nombre}
-                </td>
-                <td>
-                  {editingDni === d.dni ? (
-                    <input className="edit-input" value={editData.descripcion} onChange={e => setEditData({ ...editData, descripcion: e.target.value })} />
-                  ) : (d.descripcion || '')}
-                </td>
-                <td>
-                  {Array.isArray(asignadosByDni[d.dni]) ? (
-                    asignadosByDni[d.dni].length > 0 ? (
+                <tr key={d.dni}>
+                  <td>{d.dni}</td>
+                  <td>
+                    {editingDni === d.dni ? (
+                      <input className="edit-input" value={editData.nombre} onChange={e => setEditData({ ...editData, nombre: e.target.value })} />
+                    ) : d.nombre}
+                  </td>
+                  <td>
+                    {editingDni === d.dni ? (
+                      <input className="edit-input" value={editData.descripcion} onChange={e => setEditData({ ...editData, descripcion: e.target.value })} />
+                    ) : (d.descripcion || '')}
+                  </td>
+                  <td>
+                    {Array.isArray(asignadosByDni[d.dni]) ? (
+                      asignadosByDni[d.dni].length > 0 ? (
+                        <div className="inline-actions">
+                          {asignadosByDni[d.dni].map(c => (
+                            <span key={c.id}>
+                              {c.nombre}
+                              <button type="button" onClick={() => quitarAsignacionX(d.dni, c.id)} title="Quitar">
+                                <XCircle size={14} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span>(Sin cursos)</span>
+                      )
+                    ) : (
                       <div className="inline-actions">
-                        {asignadosByDni[d.dni].map(c => (
-                          <span key={c.id}>
-                            {c.nombre}
-                            <button type="button" onClick={() => quitarAsignacionX(d.dni, c.id)} title="Quitar">
-                              <XCircle size={14} />
-                            </button>
-                          </span>
-                        ))}
+                        <span>{d.cursos || ''}</span>
+                        <button type="button" onClick={() => cargarAsignados(d.dni)} disabled={!!loadingByDni[d.dni]} title={loadingByDni[d.dni] ? 'Cargando...' : 'Editar'}>
+                          <Edit size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {editingDni === d.dni ? (
+                      <input className="edit-input" value={editData.password} onChange={e => setEditData({ ...editData, password: e.target.value })} placeholder="Dejar vacío para no cambiar" />
+                    ) : (d.password || '')}
+                  </td>
+                  <td>
+                    {editingDni === d.dni ? (
+                      <div className="edit-actions">
+                        <button type="button" onClick={guardarDocente} className="btn-save">Guardar</button>
+                        <button type="button" onClick={cancelarEdicion} className="btn-cancel">Cancelar</button>
                       </div>
                     ) : (
-                      <span>(Sin cursos)</span>
-                    )
-                  ) : (
-                    <div className="inline-actions">
-                      <span>{d.cursos || ''}</span>
-                      <button type="button" onClick={() => cargarAsignados(d.dni)} disabled={!!loadingByDni[d.dni]} title={loadingByDni[d.dni] ? 'Cargando...' : 'Editar'}>
-                        <Edit size={16} />
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td>
-                  {editingDni === d.dni ? (
-                    <input className="edit-input" value={editData.password} onChange={e => setEditData({ ...editData, password: e.target.value })} placeholder="Dejar vacío para no cambiar" />
-                  ) : (d.password || '')}
-                </td>
-                <td>
-                      {editingDni === d.dni ? (
-                        <>
-                          <button type="button" onClick={guardarDocente}>Guardar</button>
-                          <button type="button" onClick={cancelarEdicion}>Cancelar</button>
-                        </>
-                      ) : (
-                        <>
-                          <button type="button" onClick={() => iniciarEdicion(d)} title="Editar">
-                            <Edit size={16} />
-                          </button>
-                          <button type="button" onClick={() => eliminarDocente(d.dni)} title="Eliminar">
-                            <Trash2 size={16} />
-                          </button>
-                          <button type="button" onClick={() => abrirModalAsignar(d.dni)}>Asignar cursos</button>
-                        </>
-                      )}
-                </td>
-                  </tr>
-                  
-                </>
+                      <div className="dropdown-wrapper">
+                        <button 
+                          type="button" 
+                          className="btn-menu" 
+                          onClick={() => toggleMenu(d.dni)}
+                          title="Acciones"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        {menuAbierto === d.dni && (
+                          <>
+                            <div className="dropdown-backdrop" onClick={cerrarMenu}></div>
+                            <div className="dropdown-menu-inline">
+                              <button type="button" onClick={() => { iniciarEdicion(d); cerrarMenu(); }}>
+                                <Edit size={16} />
+                                <span>Editar</span>
+                              </button>
+                              <button type="button" onClick={() => { abrirModalAsignar(d.dni); cerrarMenu(); }}>
+                                <UserPlus size={16} />
+                                <span>Asignar cursos</span>
+                              </button>
+                              <button type="button" onClick={() => { eliminarDocente(d.dni); cerrarMenu(); }} className="btn-danger">
+                                <Trash2 size={16} />
+                                <span>Eliminar</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
               ))}
               {data.length === 0 && (
                 <tr>
@@ -273,6 +299,8 @@ function ListaDocentes() {
           </table>
         </div>
       )}
+
+      {/* MODAL DE ASIGNACIÓN */}
       {modal.visible && (
         <div className="modal-overlay">
           <div className="modal-card">

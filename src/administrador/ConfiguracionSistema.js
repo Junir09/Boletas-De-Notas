@@ -10,10 +10,8 @@ function ConfiguracionSistema() {
   
   // Grados
   const [grados, setGrados] = useState([]);
-  const [nuevoGradoNumero, setNuevoGradoNumero] = useState('');
   const [nuevoGradoNombre, setNuevoGradoNombre] = useState('');
   const [editGradoId, setEditGradoId] = useState(0);
-  const [editGradoNumero, setEditGradoNumero] = useState('');
   const [editGradoNombre, setEditGradoNombre] = useState('');
   
   // Secciones
@@ -21,6 +19,13 @@ function ConfiguracionSistema() {
   const [nuevaSeccion, setNuevaSeccion] = useState('');
   const [editSeccionId, setEditSeccionId] = useState(0);
   const [editSeccionNombre, setEditSeccionNombre] = useState('');
+
+  // Cursos y asignaciones curso-grado-seccion
+  const [cursos, setCursos] = useState([]);
+  const [asignaciones, setAsignaciones] = useState([]);
+  const [selCursoId, setSelCursoId] = useState(0);
+  const [selGradoId, setSelGradoId] = useState(0);
+  const [selSeccionId, setSelSeccionId] = useState(0);
 
   useEffect(() => {
     try {
@@ -33,6 +38,8 @@ function ConfiguracionSistema() {
     }
     cargarGrados();
     cargarSecciones();
+    cargarCursos();
+    cargarAsignaciones();
   }, []);
 
   const cargarGrados = async () => {
@@ -48,6 +55,22 @@ function ConfiguracionSistema() {
       const resp = await fetch(api('/api/secciones'));
       const json = await resp.json();
       setSecciones(json.ok && Array.isArray(json.data) ? json.data : []);
+    } catch (_) {}
+  };
+
+  const cargarCursos = async () => {
+    try {
+      const resp = await fetch(api('/api/cursos'));
+      const json = await resp.json();
+      setCursos(json.ok && Array.isArray(json.data) ? json.data : []);
+    } catch (_) {}
+  };
+
+  const cargarAsignaciones = async () => {
+    try {
+      const resp = await fetch(api('/api/curso-grado'));
+      const json = await resp.json();
+      setAsignaciones(json.ok && Array.isArray(json.data) ? json.data : []);
     } catch (_) {}
   };
 
@@ -77,18 +100,17 @@ function ConfiguracionSistema() {
 
   // === GRADOS ===
   const crearGrado = async () => {
-    const num = Number(nuevoGradoNumero);
     const nom = String(nuevoGradoNombre || '').trim();
-    if (!num || num < 1 || !nom) { setStatus('Completa número y nombre del grado'); return; }
+    if (!nom) { setStatus('Ingresa nombre del grado'); return; }
     try {
       const resp = await fetch(api('/api/grados'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero: num, nombre: nom })
+        body: JSON.stringify({ nombre: nom })
       });
       const json = await resp.json();
       if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al crear grado'); return; }
-      setNuevoGradoNumero(''); setNuevoGradoNombre('');
+      setNuevoGradoNombre('');
       await cargarGrados();
       setStatus('Grado creado');
       setTimeout(() => setStatus(''), 1500);
@@ -97,26 +119,23 @@ function ConfiguracionSistema() {
 
   const iniciarEdicionGrado = (g) => {
     setEditGradoId(g.id);
-    setEditGradoNumero(String(g.numero));
     setEditGradoNombre(g.nombre);
   };
 
   const cancelarEdicionGrado = () => {
     setEditGradoId(0);
-    setEditGradoNumero('');
     setEditGradoNombre('');
   };
 
   const guardarGrado = async () => {
     const id = Number(editGradoId);
-    const num = Number(editGradoNumero);
     const nom = String(editGradoNombre || '').trim();
-    if (!id || !num || !nom) return;
+    if (!id || !nom) return;
     try {
       const resp = await fetch(api(`/api/grados/${id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero: num, nombre: nom })
+        body: JSON.stringify({ nombre: nom })
       });
       const json = await resp.json();
       if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al actualizar'); return; }
@@ -199,6 +218,39 @@ function ConfiguracionSistema() {
     } catch (_) { setStatus('No se pudo eliminar'); }
   };
 
+  const crearAsignacionCursoGrado = async () => {
+    const cid = Number(selCursoId || 0);
+    const gid = Number(selGradoId || 0);
+    const sid = Number(selSeccionId || 0) || null;
+    if (!cid || !gid) { setStatus('Selecciona curso y grado'); return; }
+    try {
+      const resp = await fetch(api('/api/curso-grado'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curso_id: cid, grado_id: gid, seccion_id: sid })
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al asignar curso'); return; }
+      setSelCursoId(0); setSelGradoId(0); setSelSeccionId(0);
+      await cargarAsignaciones();
+      setStatus('Curso asignado');
+      setTimeout(() => setStatus(''), 1500);
+    } catch (_) { setStatus('No se pudo asignar curso'); }
+  };
+
+  const eliminarAsignacion = async (id) => {
+    const aid = Number(id || 0);
+    if (!aid) return;
+    try {
+      const resp = await fetch(api(`/api/curso-grado/${aid}`), { method: 'DELETE' });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al eliminar asignación'); return; }
+      await cargarAsignaciones();
+      setStatus('Asignación eliminada');
+      setTimeout(() => setStatus(''), 1500);
+    } catch (_) { setStatus('No se pudo eliminar asignación'); }
+  };
+
   return (
     <div className="configuracion">
       <h2>Configuración del Sistema</h2>
@@ -224,15 +276,9 @@ function ConfiguracionSistema() {
 
       {/* === GRADOS === */}
       <h2>Gestión de Grados</h2>
-      <div className="field-row">
-        <div className="field">
-          <label>Número</label>
-          <input type="number" value={nuevoGradoNumero} onChange={e => setNuevoGradoNumero(e.target.value)} placeholder="1" min="1" />
-        </div>
-        <div className="field">
-          <label>Nombre</label>
-          <input type="text" value={nuevoGradoNombre} onChange={e => setNuevoGradoNombre(e.target.value)} placeholder="1°" />
-        </div>
+      <div className="field">
+        <label>Nombre</label>
+        <input type="text" value={nuevoGradoNombre} onChange={e => setNuevoGradoNombre(e.target.value)} placeholder="1°" />
       </div>
       <div className="actions">
         <button type="button" onClick={crearGrado}>Crear grado</button>
@@ -242,7 +288,6 @@ function ConfiguracionSistema() {
         <table className="table">
           <thead>
             <tr>
-              <th>Número</th>
               <th>Nombre</th>
               <th>Acciones</th>
             </tr>
@@ -250,11 +295,6 @@ function ConfiguracionSistema() {
           <tbody>
             {grados.map(g => (
               <tr key={g.id}>
-                <td>
-                  {editGradoId === g.id ? (
-                    <input type="number" value={editGradoNumero} onChange={e => setEditGradoNumero(e.target.value)} min="1" />
-                  ) : g.numero}
-                </td>
                 <td>
                   {editGradoId === g.id ? (
                     <input type="text" value={editGradoNombre} onChange={e => setEditGradoNombre(e.target.value)} />
@@ -280,7 +320,7 @@ function ConfiguracionSistema() {
               </tr>
             ))}
             {grados.length === 0 && (
-              <tr><td colSpan={3} className="empty-state">No hay grados registrados</td></tr>
+              <tr><td colSpan={2} className="empty-state">No hay grados registrados</td></tr>
             )}
           </tbody>
         </table>
@@ -335,6 +375,64 @@ function ConfiguracionSistema() {
             ))}
             {secciones.length === 0 && (
               <tr><td colSpan={2} className="empty-state">No hay secciones registradas</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <hr className="divider" />
+
+      <h2>Asignación de cursos por grado y sección</h2>
+      <div className="field-row">
+        <div className="field">
+          <label>Curso</label>
+          <select value={selCursoId || ''} onChange={e => setSelCursoId(Number(e.target.value) || 0)}>
+            <option value="">Selecciona curso</option>
+            {cursos.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
+          </select>
+        </div>
+        <div className="field">
+          <label>Grado</label>
+          <select value={selGradoId || ''} onChange={e => setSelGradoId(Number(e.target.value) || 0)}>
+            <option value="">Selecciona grado</option>
+            {grados.map(g => (<option key={g.id} value={g.id}>{g.nombre}</option>))}
+          </select>
+        </div>
+        <div className="field">
+          <label>Sección (opcional)</label>
+          <select value={selSeccionId || ''} onChange={e => setSelSeccionId(Number(e.target.value) || 0)}>
+            <option value="">Todas</option>
+            {secciones.map(s => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
+          </select>
+        </div>
+      </div>
+      <div className="actions">
+        <button type="button" onClick={crearAsignacionCursoGrado}>Asignar curso</button>
+      </div>
+
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Grado</th>
+              <th>Sección</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {asignaciones.map(a => (
+              <tr key={a.id}>
+                <td>{a.curso}</td>
+                <td>{a.grado}</td>
+                <td>{a.seccion || ''}</td>
+                <td className="inline-actions">
+                  <button type="button" onClick={() => eliminarAsignacion(a.id)}>Eliminar</button>
+                </td>
+              </tr>
+            ))}
+            {asignaciones.length === 0 && (
+              <tr><td colSpan={4} className="empty-state">No hay asignaciones registradas</td></tr>
             )}
           </tbody>
         </table>

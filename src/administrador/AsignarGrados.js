@@ -148,13 +148,20 @@ function AsignarGrados() {
     } catch (_) { setStatus('No se pudo bajar'); }
   };
 
+  const parseNumero = (nombre) => {
+    const s = String(nombre || '');
+    const m = s.match(/\d+/);
+    return m ? Number(m[0]) : 0;
+  };
+
   // Agrupar estudiantes por grado dinámicamente
   const porGrado = {
     sin: estudiantes.filter(e => e.grado == null)
   };
   
   grados.forEach(g => {
-    porGrado[g.numero] = estudiantes.filter(e => e.grado === g.numero);
+    const n = parseNumero(g.nombre);
+    if (n) porGrado[n] = estudiantes.filter(e => e.grado === n);
   });
 
   return (
@@ -180,7 +187,7 @@ function AsignarGrados() {
         <select value={grado || ''} onChange={e => setGrado(Number(e.target.value) || 0)}>
           <option value="">Selecciona grado</option>
           {grados.map(g => (
-            <option key={g.id} value={g.numero}>{g.nombre}</option>
+            <option key={g.id} value={parseNumero(g.nombre)}>{g.nombre}</option>
           ))}
         </select>
         
@@ -223,8 +230,8 @@ function AsignarGrados() {
           <tbody>
             {porGrado.sin.length === 0 && (<tr><td colSpan={5}>(Sin estudiantes)</td></tr>)}
             {porGrado.sin.map(e => (
-              <tr key={e.dni} data-dni={e.dni}>
-                <td><input type="checkbox" checked={seleccionados.has(e.dni)} onChange={() => toggle(e.dni)} /></td>
+              <tr key={e.dni} data-dni={e.dni} onClick={() => toggle(e.dni)}>
+                <td><input type="checkbox" checked={seleccionados.has(e.dni)} onChange={() => toggle(e.dni)} onClick={(ev) => ev.stopPropagation()} /></td>
                 <td>{e.dni}</td>
                 <td>{e.apellidos}</td>
                 <td>{e.nombres}</td>
@@ -239,8 +246,8 @@ function AsignarGrados() {
         <div key={gradoObj.id}>
           <h3>Grado {gradoObj.nombre}</h3>
           <div className="actions inline-actions">
-            <button type="button" onClick={() => seleccionarTodos(porGrado[gradoObj.numero] || [])}>Seleccionar todos</button>
-            <button type="button" onClick={() => limpiarSeleccionGrupo(porGrado[gradoObj.numero] || [])} title="Limpiar selección del grupo">
+            <button type="button" onClick={() => seleccionarTodos(porGrado[parseNumero(gradoObj.nombre)] || [])}>Seleccionar todos</button>
+            <button type="button" onClick={() => limpiarSeleccionGrupo(porGrado[parseNumero(gradoObj.nombre)] || [])} title="Limpiar selección del grupo">
               <XCircle size={18} />
             </button>
           </div>
@@ -256,10 +263,10 @@ function AsignarGrados() {
                 </tr>
               </thead>
               <tbody>
-                {(!porGrado[gradoObj.numero] || porGrado[gradoObj.numero].length === 0) && (<tr><td colSpan={5}>(Sin estudiantes)</td></tr>)}
-                {(porGrado[gradoObj.numero] || []).map(e => (
-                  <tr key={e.dni} data-dni={e.dni}>
-                    <td><input type="checkbox" checked={seleccionados.has(e.dni)} onChange={() => toggle(e.dni)} /></td>
+                {(!porGrado[parseNumero(gradoObj.nombre)] || porGrado[parseNumero(gradoObj.nombre)].length === 0) && (<tr><td colSpan={5}>(Sin estudiantes)</td></tr>)}
+                {(porGrado[parseNumero(gradoObj.nombre)] || []).map(e => (
+                  <tr key={e.dni} data-dni={e.dni} onClick={() => toggle(e.dni)}>
+                    <td><input type="checkbox" checked={seleccionados.has(e.dni)} onChange={() => toggle(e.dni)} onClick={(ev) => ev.stopPropagation()} /></td>
                     <td>{e.dni}</td>
                     <td>{e.apellidos}</td>
                     <td>{e.nombres}</td>

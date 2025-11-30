@@ -2,19 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, FileText, BarChart3, LogOut } from 'lucide-react';
 import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
-import '../assets/css/docentehome.css';
+import '../assets/css/docente/docentehome.css';
 import { api } from '../api';
+import Cursos from './Cursos';
+import Boletas from './Boletas';
+import Reportes from './Reportes';
 
 function DocenteHome() {
   const [vista, setVista] = useState('cursos');
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [asignaciones, setAsignaciones] = useState({});
+  const [docente, setDocente] = useState(null);
+  const [notaSel, setNotaSel] = useState(null);
 
   useEffect(() => {
     if (vista === 'cursos') {
+      cargarDocente();
       cargarCursos();
     }
   }, [vista]);
+
+  const cargarDocente = async () => {
+    try {
+      const dni = localStorage.getItem('dni') || '';
+      if (!dni) return;
+      const resp = await fetch(api(`/api/docentes/${dni}`));
+      const json = await resp.json();
+      if (resp.ok && json.ok && json.data) {
+        setDocente(json.data);
+        return;
+      }
+      const respAll = await fetch(api('/api/docentes'));
+      const jsonAll = await respAll.json();
+      if (respAll.ok && jsonAll.ok && Array.isArray(jsonAll.data)) {
+        const found = jsonAll.data.find(d => String(d.dni) === dni);
+        if (found) setDocente({ dni: found.dni, nombre: found.nombre || `${found.nombres || ''} ${found.apellidos || ''}`.trim() });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const cargarCursos = async () => {
     setLoading(true);
@@ -24,6 +52,15 @@ function DocenteHome() {
       const resp = await fetch(api(`/api/docentes/${dni}/cursos`));
       const json = await resp.json();
       setCursos(json.ok && Array.isArray(json.data) ? json.data : []);
+      const r2 = await fetch(api(`/api/docentes/${dni}/cursos/asignaciones`));
+      const j2 = await r2.json();
+      const list = (r2.ok && j2.ok && Array.isArray(j2.data)) ? j2.data : [];
+      const map = {};
+      for (const it of list) {
+        if (!map[it.curso_id]) map[it.curso_id] = [];
+        map[it.curso_id].push({ grado: it.grado, seccion: it.seccion, alumnos: it.alumnos, grado_id: it.grado_id, seccion_id: it.seccion_id });
+      }
+      setAsignaciones(map);
     } catch (e) {
       console.error(e);
     } finally {
@@ -37,8 +74,8 @@ function DocenteHome() {
   };
 
   return (
-    <div className="layout">
-      <aside className="sidebar">
+    <div className="docente-layout">
+      <aside className="docente-sidebar">
         <div className="sidebar-title">Docente</div>
         <nav className="sidebar-menu">
           <button className={vista === 'cursos' ? 'active' : ''} onClick={() => setVista('cursos')}>
@@ -60,48 +97,20 @@ function DocenteHome() {
         </nav>
       </aside>
 
-      <main className="content">
+      <main className="docente-content">
         {vista === 'cursos' && (
-          <>
-            <h1>Mis Cursos</h1>
-            <p>Gestiona tus cursos asignados y registra notas de estudiantes.</p>
-            {loading && <p>Cargando...</p>}
-            {!loading && cursos.length === 0 && <p>No tienes cursos asignados.</p>}
-            {!loading && cursos.length > 0 && (
-              <div className="cursos-grid">
-                {cursos.map(c => (
-                  <div key={c.id} className="curso-card">
-                    <h3>{c.nombre}</h3>
-                    <p>Gestiona las notas y asistencia de este curso.</p>
-                    <span className="badge">Ver detalles</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+          <Cursos
+            docente={docente}
+            cursos={cursos}
+            loading={loading}
+            asignaciones={asignaciones}
+            onIrBoletas={(sel) => { setNotaSel(sel); setVista('boletas'); }}
+          />
         )}
 
-        {vista === 'boletas' && (
-          <>
-            <h1>Boletas</h1>
-            <p>Genera y consulta boletas de notas de tus estudiantes.</p>
-            <div className="notas-form">
-              <h3>Próximamente</h3>
-              <p>Esta funcionalidad estará disponible pronto.</p>
-            </div>
-          </>
-        )}
+        {vista === 'boletas' && (<Boletas seleccion={notaSel} />)}
 
-        {vista === 'reportes' && (
-          <>
-            <h1>Reportes</h1>
-            <p>Consulta estadísticas y reportes de rendimiento académico.</p>
-            <div className="notas-form">
-              <h3>Próximamente</h3>
-              <p>Esta funcionalidad estará disponible pronto.</p>
-            </div>
-          </>
-        )}
+        {vista === 'reportes' && (<Reportes />)}
       </main>
     </div>
   );

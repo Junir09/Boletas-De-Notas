@@ -34,6 +34,7 @@ function LoginAvanzado({ onSuccess }) {
         const data = await resp.json();
         if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
         setError('');
+        try { localStorage.setItem('dni', u); } catch {}
         onSuccess('#/docente');
       } catch (err) {
         console.error(err);

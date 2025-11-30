@@ -224,6 +224,25 @@ app.get('/api/docentes/:dni/cursos/:cursoId/estudiantes', async (req, res) => {
   }
 });
 
+// Docentes asignados a un curso
+app.get('/api/cursos/:id/docentes', async (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
+  try {
+    try { await pool.query("SET collation_connection = 'utf8mb4_unicode_ci'"); } catch (_) {}
+    const sql = `
+      SELECT d.dni, d.nombre
+      FROM docente_curso dc
+      JOIN docente d ON CAST(d.dni AS UNSIGNED) = CAST(dc.dni AS UNSIGNED)
+      WHERE dc.curso_id = ?
+      ORDER BY d.nombre`;
+    const [rows] = await pool.query(sql, [id]);
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.get('/api/curso-actividades', async (req, res) => {
   const cursoId = Number(req.query.curso_id || 0);
   const gradoId = Number(req.query.grado_id || 0);

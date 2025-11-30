@@ -67,6 +67,7 @@ function App() {
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) { setError(data.error || 'DNI inválido'); return; }
+      try { localStorage.setItem('dni', valor.trim()); } catch {}
       window.location.hash = '#/alumnos';
     } catch (err) {
       console.error(err);

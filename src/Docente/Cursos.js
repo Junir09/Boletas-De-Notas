@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import '../assets/css/docente/cursos.css';
 import { api } from '../api';
 
 export default function Cursos({ docente = null, cursos = [], loading = false, asignaciones = {}, onIrBoletas }) {

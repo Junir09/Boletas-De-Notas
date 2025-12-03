@@ -1,0 +1,10 @@
+.inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.estudiantes-table { background: var(--color-card-bg); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-weak); border: 1px solid var(--color-border); margin-top: 16px; }
+.estudiantes-table table { width: 100%; border-collapse: collapse; }
+.estudiantes-table thead th { text-align: left; background: var(--color-fondo-alt); color: var(--color-text-label); padding: 14px 16px; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--color-border); }
+.estudiantes-table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text); font-size: 0.95rem; }
+.estudiantes-table tbody tr:hover { background: var(--color-fondo-alt); transition: background 0.15s ease; }
+.estudiantes-table tbody tr:last-child td { border-bottom: none; }
+.table-scroll { width: 100%; overflow: hidden; }
+.scroll-area { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+.scroll-area table { min-width: max-content; }

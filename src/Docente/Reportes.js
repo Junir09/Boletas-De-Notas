@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/docente/reportes.css';
 import { api } from '../api';
 
 export default function Reportes() {

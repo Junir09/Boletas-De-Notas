@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../assets/css/alumnos/boletines.css';
 import { api } from '../api';
 
 export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }) {

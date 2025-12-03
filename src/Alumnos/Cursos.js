@@ -1,4 +1,5 @@
 import React from 'react';
+import '../assets/css/alumnos/cursos.css';
 
 export default function Cursos({ alumno, cursos, onIrBoletines }) {
   const grupos = (() => {

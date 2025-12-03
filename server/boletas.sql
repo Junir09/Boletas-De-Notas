@@ -127,49 +127,66 @@ ALTER TABLE `actividad_nota`
   ADD CONSTRAINT `fk_an_actividad` FOREIGN KEY (`actividad_id`) REFERENCES `curso_actividad`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_an_estudiante` FOREIGN KEY (`estudiante_dni`) REFERENCES `estudiantes`(`dni`) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Ejemplos de inserciones (puedes ajustar según tus datos reales)
--- Nota: si usas AUTO_INCREMENT, no es necesario pasar `id`.
+ALTER TABLE `docente_curso`
+  ADD CONSTRAINT `fk_dc_docente` FOREIGN KEY (`dni`) REFERENCES `docente`(`dni`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_dc_curso` FOREIGN KEY (`curso_id`) REFERENCES `cursos`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Docentes
-INSERT INTO `docente` (`dni`, `nombre`, `descripcion`, `password`) VALUES
-('12345678', 'Juan Pérez', 'Profesor de Matemática', '123456'),
-('87654321', 'María López', 'Profesor de Lenguaje', 'abcdef');
+INSERT IGNORE INTO `grados` (`nombre`) VALUES ('1°'), ('2°'), ('3°'), ('4°'), ('5°'), ('6°');
+INSERT IGNORE INTO `secciones` (`nombre`) VALUES ('A'), ('B');
+INSERT IGNORE INTO `cursos` (`nombre`, `descripcion`) VALUES ('Matemática', NULL), ('Comunicación', NULL), ('Ciencias', NULL);
+INSERT IGNORE INTO `docente` (`dni`, `nombre`, `descripcion`, `password`) VALUES
+  ('12345678', 'Juan Pérez', NULL, '654321'),
+  ('87654321', 'María López', NULL, '123456');
+INSERT IGNORE INTO `docente_curso` (`dni`, `curso_id`) SELECT '12345678', c.id FROM `cursos` c WHERE c.`nombre` = 'Matemática';
+INSERT IGNORE INTO `docente_curso` (`dni`, `curso_id`) SELECT '87654321', c.id FROM `cursos` c WHERE c.`nombre` = 'Comunicación';
 
--- Estudiantes
-INSERT INTO `estudiantes` (`dni`, `apellidos`, `nombres`, `grado`, `seccion`, `grado_id`, `seccion_id`) VALUES
-('44556677', 'Gómez Ramírez', 'Carlos', 1, 'A', 1, 1),
-('99887766', 'Suárez Díaz', 'Ana', 1, 'A', 1, 1);
+INSERT IGNORE INTO `estudiantes` (`dni`, `apellidos`, `nombres`, `grado`, `seccion`) VALUES
+  ('15837237', 'Castro García', 'Sofía', 1, 'A'),
+  ('34871792', 'Castro López', 'Luis', 1, 'A'),
+  ('21178702', 'Díaz Rojas', 'Andrea', 1, 'A'),
+  ('51526326', 'Flores Mendoza', 'Carlos', 1, 'A'),
+  ('60859754', 'Flores Salazar', 'Mariana', 1, 'A'),
+  ('29052448', 'Flores Pérez', 'Jorge', 1, 'A')
+ON DUPLICATE KEY UPDATE `apellidos`=VALUES(`apellidos`), `nombres`=VALUES(`nombres`), `grado`=VALUES(`grado`), `seccion`=VALUES(`seccion`);
 
--- Cursos
-INSERT INTO `cursos` (`nombre`, `descripcion`) VALUES
-('Matemática', 'Curso de Matemática básica'),
-('Lenguaje', 'Curso de Lenguaje y Comunicación');
+INSERT IGNORE INTO `curso_grado` (`curso_id`, `grado_id`, `seccion_id`)
+SELECT c.id, g.id, s.id FROM `cursos` c JOIN `grados` g ON g.`nombre` = '1°' JOIN `secciones` s ON s.`nombre` = 'A' WHERE c.`nombre` = 'Matemática';
 
--- Grados por defecto (1° a 6°)
-INSERT INTO `grados` (`nombre`) VALUES
-('1°'),
-('2°'),
-('3°'),
-('4°'),
-('5°'),
-('6°');
+UPDATE `curso_actividad` SET `nombre`='Práctica' WHERE `nombre`='PRACTICA';
+UPDATE `curso_actividad` SET `nombre`='Tarea' WHERE `nombre`='XXX';
+UPDATE `curso_actividad` SET `nombre`='Examen' WHERE `nombre`='OÑO';
+UPDATE `curso_actividad` SET `nombre`='Unidad 1' WHERE `nombre`='UNIDAD 1';
+INSERT INTO `curso_actividad` (`curso_id`, `grado_id`, `seccion_id`, `nombre`, `orden`)
+SELECT c.id, g.id, s.id, 'Práctica', 1 FROM `cursos` c JOIN `grados` g ON g.`nombre`='1°' JOIN `secciones` s ON s.`nombre`='A' WHERE c.`nombre`='Matemática' AND NOT EXISTS(
+  SELECT 1 FROM `curso_actividad` ca WHERE ca.`curso_id`=c.id AND ca.`grado_id`=g.id AND ca.`seccion_id`=s.id AND ca.`nombre`='Práctica'
+);
+INSERT INTO `curso_actividad` (`curso_id`, `grado_id`, `seccion_id`, `nombre`, `orden`)
+SELECT c.id, g.id, s.id, 'Tarea', 2 FROM `cursos` c JOIN `grados` g ON g.`nombre`='1°' JOIN `secciones` s ON s.`nombre`='A' WHERE c.`nombre`='Matemática' AND NOT EXISTS(
+  SELECT 1 FROM `curso_actividad` ca WHERE ca.`curso_id`=c.id AND ca.`grado_id`=g.id AND ca.`seccion_id`=s.id AND ca.`nombre`='Tarea'
+);
+INSERT INTO `curso_actividad` (`curso_id`, `grado_id`, `seccion_id`, `nombre`, `orden`)
+SELECT c.id, g.id, s.id, 'Examen', 3 FROM `cursos` c JOIN `grados` g ON g.`nombre`='1°' JOIN `secciones` s ON s.`nombre`='A' WHERE c.`nombre`='Matemática' AND NOT EXISTS(
+  SELECT 1 FROM `curso_actividad` ca WHERE ca.`curso_id`=c.id AND ca.`grado_id`=g.id AND ca.`seccion_id`=s.id AND ca.`nombre`='Examen'
+);
+INSERT INTO `curso_actividad` (`curso_id`, `grado_id`, `seccion_id`, `nombre`, `orden`)
+SELECT c.id, g.id, s.id, 'Unidad 1', 4 FROM `cursos` c JOIN `grados` g ON g.`nombre`='1°' JOIN `secciones` s ON s.`nombre`='A' WHERE c.`nombre`='Matemática' AND NOT EXISTS(
+  SELECT 1 FROM `curso_actividad` ca WHERE ca.`curso_id`=c.id AND ca.`grado_id`=g.id AND ca.`seccion_id`=s.id AND ca.`nombre`='Unidad 1'
+);
 
--- Secciones por defecto (A, B, C)
-INSERT INTO `secciones` (`nombre`) VALUES
-('A'),
-('B'),
-('C');
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '15837237', 20.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='PRACTICA';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '15837237', 15.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='XXX';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '15837237', 5.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='OÑO';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '15837237', 11.67 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='UNIDAD 1';
 
--- Asignaciones de cursos a docentes (asumiendo IDs autogenerados)
-INSERT INTO `docente_curso` (`dni`, `curso_id`) VALUES
-('12345678', 1),
-('87654321', 2);
-
--- Asignaciones de cursos por grado y sección (ejemplo)
-INSERT INTO `curso_grado` (`curso_id`, `grado_id`, `seccion_id`) VALUES
-(1, 1, 1);
-
--- Si prefieres insertar con `id` explícito (no recomendado con AUTO_INCREMENT),
--- usa este formato:
--- INSERT INTO `docente`(`id`, `dni`, `nombre`, `descripcion`, `password`) VALUES (1,'12345678','Juan Pérez','Profesor de Matemática','123456');
--- INSERT INTO `estudiantes`(`id`, `dni`, `apellidos`, `nombres`) VALUES (1,'44556677','Gómez Ramírez','Carlos');
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '34871792', 10.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='PRACTICA';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '34871792', 20.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='XXX';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '34871792', 4.00 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='OÑO';
+INSERT INTO `actividad_nota` (`actividad_id`, `estudiante_dni`, `nota`)
+SELECT ca.id, '34871792', 11.33 FROM `curso_actividad` ca JOIN `cursos` c ON c.id = ca.curso_id JOIN `grados` g ON g.id = ca.grado_id JOIN `secciones` s ON s.id = ca.seccion_id WHERE c.`nombre`='Matemática' AND g.`nombre`='1°' AND s.`nombre`='A' AND ca.`nombre`='UNIDAD 1';

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import '../assets/css/docente/boletas.css';
 import { api } from '../api';
 
 export default function Boletas({ seleccion }) {
@@ -14,14 +15,11 @@ export default function Boletas({ seleccion }) {
   const [scrollMax, setScrollMax] = useState(0);
   const [scrollVal, setScrollVal] = useState(0);
   const [delOpen, setDelOpen] = useState(false);
+  const [promLinks, setPromLinks] = useState({});
+  const [pageCount, setPageCount] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
 
-  useEffect(() => {
-    if (!seleccion || !seleccion.cursoId || !seleccion.gradoId) return;
-    cargarAlumnos();
-    cargarActividades();
-  }, [seleccion]);
-
-  const cargarAlumnos = async () => {
+  const cargarAlumnos = useCallback(async () => {
     setLoading(true);
     try {
       const dni = localStorage.getItem('dni') || '';
@@ -34,9 +32,9 @@ export default function Boletas({ seleccion }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [seleccion]);
 
-  const cargarActividades = async () => {
+  const cargarActividades = useCallback(async () => {
     try {
       const qs = `?curso_id=${seleccion.cursoId}&grado_id=${seleccion.gradoId}` + (seleccion.seccionId ? `&seccion_id=${seleccion.seccionId}` : '');
       const resp = await fetch(api(`/api/curso-actividades${qs}`));
@@ -61,7 +59,15 @@ export default function Boletas({ seleccion }) {
       setActividades([]);
       setNotas({});
     }
-  };
+  }, [seleccion, actividadSel]);
+
+  useEffect(() => {
+    if (!seleccion || !seleccion.cursoId || !seleccion.gradoId) return;
+    cargarAlumnos();
+    cargarActividades();
+  }, [seleccion, cargarAlumnos, cargarActividades]);
+
+  
 
   const agregarActividad = async () => {
     const nombre = prompt('Nombre de la actividad/práctica');
@@ -116,6 +122,7 @@ export default function Boletas({ seleccion }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actividad_id: nuevaId, notas: payload })
       });
+      setPromLinks(prev => ({ ...prev, [nuevaId]: [...promSeleccion] }));
       setPromOpen(false);
       await cargarActividades();
     } catch (e) {
@@ -123,8 +130,39 @@ export default function Boletas({ seleccion }) {
     }
   };
 
+  const esPromedioPorNombre = (nombre) => {
+    const s = String(nombre || '').trim().toUpperCase();
+    if (!s) return false;
+    if (s.includes('PROMEDIO')) return true;
+    return /^UNIDAD\s*\d+$/i.test(s);
+  };
+
+  const clamp20 = (v) => {
+    const n = Number(v);
+    if (isNaN(n)) return '';
+    const c = Math.max(0, Math.min(20, n));
+    return Math.round(c * 100) / 100;
+  };
+
   const onChangeNota = (actividadId, dni, val) => {
-    setNotas(prev => ({ ...prev, [actividadId]: { ...(prev[actividadId] || {}), [dni]: val } }));
+    const clamped = clamp20(val);
+    setNotas(prev => {
+      const next = { ...prev, [actividadId]: { ...(prev[actividadId] || {}), [dni]: clamped } };
+      for (const [pid, srcs] of Object.entries(promLinks)) {
+        if (srcs.includes(actividadId)) {
+          let suma = 0;
+          for (const srcId of srcs) {
+            const raw = (srcId === actividadId ? clamped : (next[srcId] && next[srcId][dni])) !== undefined ? (srcId === actividadId ? clamped : (next[srcId] && next[srcId][dni])) : '';
+            const n = Number(raw);
+            suma += isNaN(n) ? 0 : n;
+          }
+          const denom = srcs.length;
+          const prom = denom > 0 ? Math.round((suma / denom) * 100) / 100 : 0;
+          next[Number(pid)] = { ...(next[Number(pid)] || {}), [dni]: prom };
+        }
+      }
+      return next;
+    });
   };
 
   const guardarNotas = async () => {
@@ -170,12 +208,33 @@ export default function Boletas({ seleccion }) {
       if (!scrollRef.current) return;
       const max = Math.max(0, scrollRef.current.scrollWidth - scrollRef.current.clientWidth);
       setScrollMax(max);
-      setScrollVal(scrollRef.current.scrollLeft);
+      const left = scrollRef.current.scrollLeft;
+      setScrollVal(left);
+      const pc = Math.max(1, Math.ceil(scrollRef.current.scrollWidth / scrollRef.current.clientWidth));
+      setPageCount(pc);
+      const cp = Math.round(left / scrollRef.current.clientWidth);
+      setCurrentPage(Math.min(pc - 1, Math.max(0, cp)));
     };
     updateScroll();
     window.addEventListener('resize', updateScroll);
     return () => window.removeEventListener('resize', updateScroll);
   }, [actividades, alumnos]);
+
+  const goToPage = (p) => {
+    if (!scrollRef.current) return;
+    const c = Math.min(pageCount - 1, Math.max(0, p));
+    const left = c * scrollRef.current.clientWidth;
+    try {
+      scrollRef.current.scrollTo({ left, behavior: 'smooth' });
+    } catch (_) {
+      scrollRef.current.scrollLeft = left;
+    }
+    setCurrentPage(c);
+    setScrollVal(left);
+  };
+
+  const prevPage = () => goToPage(currentPage - 1);
+  const nextPage = () => goToPage(currentPage + 1);
 
   return (
     <>
@@ -183,43 +242,56 @@ export default function Boletas({ seleccion }) {
       <p>{seleccion ? `${seleccion.cursoNombre} - ${seleccion.gradoNombre}${seleccion.seccionNombre ? ` ${seleccion.seccionNombre}` : ''}` : ''}</p>
       <div className="notas-form">
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button onClick={agregarActividad}>Agregar actividad/práctica</button>
+          <button onClick={agregarActividad} disabled={loading}>Agregar actividad/práctica</button>
           <span>
             <label style={{ marginRight: 8 }}>Actividad:</label>
             <select value={actividadSel || ''} onChange={e => setActividadSel(Number(e.target.value) || null)}>
               {actividades.map(a => (<option key={a.id} value={a.id}>{a.nombre}</option>))}
             </select>
           </span>
-          <button onClick={() => setDelOpen(true)} disabled={!actividadSel}>Eliminar actividad</button>
-          <button onClick={abrirPromedios} disabled={actividades.length === 0}>Promedios</button>
-          <button onClick={guardarNotas}>Guardar notas</button>
+          <button onClick={() => setDelOpen(true)} disabled={!actividadSel || loading}>Eliminar actividad</button>
+          <button onClick={abrirPromedios} disabled={actividades.length === 0 || loading}>Promedios</button>
+          <button onClick={guardarNotas} disabled={loading}>Guardar notas</button>
         </div>
         <div className="estudiantes-table" style={{ marginTop: 16 }}>
           <div className="table-scroll">
-            <div className="scroll-area" ref={scrollRef} onScroll={() => setScrollVal(scrollRef.current ? scrollRef.current.scrollLeft : 0)}>
+            <div className="scroll-area" ref={scrollRef} onScroll={() => {
+              const el = scrollRef.current;
+              const left = el ? el.scrollLeft : 0;
+              setScrollVal(left);
+              if (el) {
+                const cp = Math.round(left / el.clientWidth);
+                setCurrentPage(Math.min(pageCount - 1, Math.max(0, cp)));
+              }
+            }}>
               <table>
                 <thead>
                   <tr>
-                    <th>DNI</th>
-                    <th>Apellidos</th>
-                    <th>Nombres</th>
+                    <th className="sticky-col sticky-col-1">DNI</th>
+                    <th className="sticky-col sticky-col-2">Apellidos</th>
+                    <th className="sticky-col sticky-col-3">Nombres</th>
                     {actividades.map(act => (<th key={act.id}>{act.nombre}</th>))}
                   </tr>
                 </thead>
                 <tbody>
                   {alumnos.map((a, rowIndex) => (
                     <tr key={a.dni}>
-                      <td>{a.dni}</td>
-                      <td>{a.apellidos}</td>
-                      <td>{a.nombres}</td>
+                      <td className="sticky-col sticky-col-1">{a.dni}</td>
+                      <td className="sticky-col sticky-col-2">{a.apellidos}</td>
+                      <td className="sticky-col sticky-col-3">{a.nombres}</td>
                       {actividades.map(act => (
                         <td key={act.id + ':' + a.dni}>
                           <input
                             id={`nota-${act.id}-${a.dni}`}
                             type="number"
                             step="0.01"
+                            min="0"
+                            max="20"
                             value={(notas[act.id] && notas[act.id][a.dni]) !== undefined ? notas[act.id][a.dni] : ''}
                             onChange={e => onChangeNota(act.id, a.dni, e.target.value)}
+                            onBlur={e => onChangeNota(act.id, a.dni, e.target.value)}
+                            className="nota-input"
+                            disabled={Boolean(promLinks[act.id]) || esPromedioPorNombre(act.nombre)}
                             onKeyDown={e => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -240,6 +312,7 @@ export default function Boletas({ seleccion }) {
             </div>
             {actividades.length > 0 && scrollMax > 0 && (
               <div className="scroll-controls">
+                <button onClick={prevPage} disabled={currentPage <= 0}>◀</button>
                 <input
                   type="range"
                   className="scroll-slider"
@@ -249,9 +322,15 @@ export default function Boletas({ seleccion }) {
                   onChange={e => {
                     const v = Number(e.target.value);
                     setScrollVal(v);
-                    if (scrollRef.current) scrollRef.current.scrollLeft = v;
+                    if (scrollRef.current) {
+                      scrollRef.current.scrollLeft = v;
+                      const cp = Math.round(v / scrollRef.current.clientWidth);
+                      setCurrentPage(Math.min(pageCount - 1, Math.max(0, cp)));
+                    }
                   }}
                 />
+                <button onClick={nextPage} disabled={currentPage >= pageCount - 1}>▶</button>
+                <span style={{ minWidth: 60, textAlign: 'center' }}>{`${currentPage + 1}/${pageCount}`}</span>
               </div>
             )}
           </div>

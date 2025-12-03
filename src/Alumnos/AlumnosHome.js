@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
-import '../assets/css/docente/docentehome.css';
+import '../assets/css/alumnos/alumnoshome.css';
 import { BookOpen, FileText, LogOut } from 'lucide-react';
 import { api } from '../api';
 import Cursos from './Cursos';
@@ -133,7 +133,7 @@ function AlumnosHome() {
           </button>
         </nav>
       </aside>
-      <main className="content">
+      <main className="content alumnos-content">
         {vista === 'cursos' && (
           <Cursos alumno={alumno} cursos={cursos} onIrBoletines={(id) => { setCursoSel(id); setVista('boletas'); }} />
         )}

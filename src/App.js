@@ -5,7 +5,7 @@ import LoginAvanzado from './pages/LoginAvanzado';
 import DocenteHome from './Docente/DocenteHome';
 import AdminHome from './administrador/AdminHome';
 import AlumnosHome from './Alumnos/AlumnosHome';
-import logoDefault from './assets/images/logo.svg';
+import logoDefault from './assets/images/logo.png';
 
 function App() {
   const [route, setRoute] = useState(window.location.hash || '#/');
@@ -108,7 +108,7 @@ function App() {
       <form className="login-card" onSubmit={handleSubmit}>
         <h1>{welcomeTitle}</h1>
         <div style={{ display: 'grid', placeItems: 'center', margin: '12px 0' }}>
-          <img src={logoUrl} alt="Logo" style={{ maxWidth: '180px', height: 'auto' }} />
+          <img src={logoUrl} alt="Logo" style={{ maxWidth: '200px', height: 'auto', borderRadius:'100px',}} />
         </div>
         <p>Ingresa tu DNI</p>
 

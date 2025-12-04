@@ -79,7 +79,7 @@ export default function Cursos({ docente = null, cursos = [], loading = false, a
               {!modalLoading && (
                 <div className="estudiantes-table">
                   <div className="table-scroll">
-                    <div className="scroll-area" ref={scrollRef} onScroll={() => setScrollVal(scrollRef.current ? scrollRef.current.scrollLeft : 0)}>
+                    <div className={`scroll-area${modalAlumnos.length === 0 ? ' no-alumnos' : ''}`} ref={scrollRef} onScroll={() => setScrollVal(scrollRef.current ? scrollRef.current.scrollLeft : 0)}>
                       <table>
                         <thead>
                           <tr>

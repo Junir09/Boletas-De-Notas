@@ -35,7 +35,7 @@ function App() {
 
   const validar = () => {
     const v = valor.trim();
-    if (v.toLowerCase() === 'acesso') return '';
+    if (v.toLowerCase() === 'acceso') return '';
     if (!v) return 'Ingresa tu DNI';
     const soloDigitos = /^\d{8,}$/;
     if (!soloDigitos.test(v)) return 'El DNI debe tener al menos 8 dígitos';
@@ -45,7 +45,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const v = valor.trim();
-    if (v.toLowerCase() === 'acesso') { setError(''); window.location.hash = '#/acceso'; return; }
+    if (v.toLowerCase() === 'acceso') { setError(''); window.location.hash = '#/acceso'; return; }
     const msg = validar();
     if (msg) { setError(msg); return; }
     setError('');

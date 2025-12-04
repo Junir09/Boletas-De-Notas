@@ -8,3 +8,4 @@
 .table-scroll { width: 100%; overflow: hidden; }
 .scroll-area { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
 .scroll-area table { min-width: max-content; }
+.scroll-area.no-data table { width: 100% !important; }

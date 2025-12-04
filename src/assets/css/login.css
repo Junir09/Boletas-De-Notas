@@ -107,3 +107,18 @@
   color: var(--color-accent);
   text-decoration: none;
 }
+.password-input { position: relative; }
+.password-input input {width: 94%; }
+.password-input .toggle-eye {
+  position: absolute;
+  left: 92%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+}
+.password-input .toggle-eye:hover { color: var(--color-text-label); }

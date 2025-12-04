@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { api } from '../api';
+import { Eye, EyeOff } from 'lucide-react';
 
 function LoginAvanzado({ onSuccess }) {
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const esSoloDigitos = (v) => /^\d+$/.test(v);
 
@@ -16,7 +18,11 @@ function LoginAvanzado({ onSuccess }) {
     if (!p) { setError('Ingresa tu contraseña'); return; }
 
     // Administrador
-    if (u.toLowerCase() === 'user' && p === 'superuser') {
+    let cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem('config') || '{}'); } catch {}
+    const adminUser = String(cfg.adminUser || 'user');
+    const adminPassword = String(cfg.adminPassword || 'superuser');
+    if (u === adminUser && p === adminPassword) {
       setError('');
       onSuccess('#/administrador');
       return;
@@ -73,12 +79,22 @@ function LoginAvanzado({ onSuccess }) {
 
         <div className="field">
           <label>Contraseña</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Ingresa tu contraseña"
-          />
+          <div className="password-input">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Ingresa tu contraseña"
+            />
+            <button
+              type="button"
+              className="toggle-eye"
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+              onClick={() => setShowPassword(s => !s)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         {error && <div className="error">{error}</div>}

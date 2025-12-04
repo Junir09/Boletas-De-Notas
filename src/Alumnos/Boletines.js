@@ -363,7 +363,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       </div>
       <div className="estudiantes-table">
         <div className="table-scroll">
-          <div className="scroll-area" style={{ overflowX: 'auto' }}>
+          <div className={`scroll-area${(actividades.length === 0) ? ' no-data' : ''}`} style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>

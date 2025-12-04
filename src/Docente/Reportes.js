@@ -219,7 +219,7 @@ export default function Reportes() {
 
       <div className="estudiantes-table" style={{ marginTop: 16 }}>
         <div className="table-scroll">
-          <div className="scroll-area" style={{ overflowX: 'auto' }}>
+          <div className={`scroll-area${(alumnos.length === 0 || actividades.length === 0) ? ' no-data' : ''}`} style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>

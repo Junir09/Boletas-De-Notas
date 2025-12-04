@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/configuracion.css';
 import { api } from '../api';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 
 function ConfiguracionSistema() {
   const [welcomeTitle, setWelcomeTitle] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [status, setStatus] = useState('');
+  const [adminUser, setAdminUser] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPass, setShowAdminPass] = useState(false);
   
   // Grados
   const [grados, setGrados] = useState([]);
@@ -32,9 +35,13 @@ function ConfiguracionSistema() {
       const cfg = JSON.parse(localStorage.getItem('config') || '{}');
       setWelcomeTitle(String(cfg.welcomeTitle || 'Bienvenidos Al Sistema de Boletas De Notas'));
       setLogoDataUrl(String(cfg.logoDataUrl || ''));
+      setAdminUser(String(cfg.adminUser || 'user'));
+      setAdminPassword(String(cfg.adminPassword || 'superuser'));
     } catch {
       setWelcomeTitle('Bienvenidos Al Sistema de Boletas De Notas');
       setLogoDataUrl('');
+      setAdminUser('user');
+      setAdminPassword('superuser');
     }
     cargarGrados();
     cargarSecciones();
@@ -87,7 +94,12 @@ function ConfiguracionSistema() {
 
   const guardar = () => {
     try {
-      const cfg = { welcomeTitle: welcomeTitle.trim(), logoDataUrl: logoDataUrl || '' };
+      const cfg = {
+        welcomeTitle: welcomeTitle.trim(),
+        logoDataUrl: logoDataUrl || '',
+        adminUser: String(adminUser || 'user'),
+        adminPassword: String(adminPassword || 'superuser')
+      };
       localStorage.setItem('config', JSON.stringify(cfg));
       setStatus('Guardado');
       setTimeout(() => setStatus(''), 1500);
@@ -267,6 +279,27 @@ function ConfiguracionSistema() {
             <button type="button" onClick={limpiarLogo} className="logo-remove">Quitar logo</button>
           </div>
         )}
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label>Usuario Administrador</label>
+          <input type="text" value={adminUser} onChange={e => setAdminUser(e.target.value)} placeholder="user" maxLength={32} />
+        </div>
+        <div className="field">
+          <label>Contraseña Administrador</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type={showAdminPass ? 'text' : 'password'}
+              value={adminPassword}
+              onChange={e => setAdminPassword(e.target.value)}
+              placeholder="superuser"
+              maxLength={64}
+            />
+            <button type="button" onClick={() => setShowAdminPass(s => !s)} title={showAdminPass ? 'Ocultar' : 'Ver'}>
+              {showAdminPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
       </div>
       <div className="actions actions-space">
         <button type="button" onClick={guardar}>Guardar configuración</button>

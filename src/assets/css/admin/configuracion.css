@@ -42,7 +42,8 @@
   font-weight: 600;
 }
 
-.configuracion .field input[type="text"] {
+.configuracion .field input[type="text"],
+.configuracion .field input[type="password"] {
   padding: 11px 14px;
   border-radius: 10px;
   border: 1px solid var(--color-border);
@@ -52,7 +53,8 @@
   transition: border 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
-.configuracion .field input[type="text"]:focus {
+.configuracion .field input[type="text"]:focus,
+.configuracion .field input[type="password"]:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: var(--shadow-focus);

@@ -255,7 +255,7 @@ export default function Boletas({ seleccion }) {
         </div>
         <div className="estudiantes-table" style={{ marginTop: 16 }}>
           <div className="table-scroll">
-            <div className="scroll-area" ref={scrollRef} onScroll={() => {
+            <div className={`scroll-area${actividades.length === 0 ? ' no-activities' : ''}`} ref={scrollRef} onScroll={() => {
               const el = scrollRef.current;
               const left = el ? el.scrollLeft : 0;
               setScrollVal(left);

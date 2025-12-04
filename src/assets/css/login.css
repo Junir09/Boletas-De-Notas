@@ -1,8 +1,5 @@
-/* Tipografía moderna */
+/* Tipografía para login (no aplica resets globales) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-/* Reset minimalista (limitado) */
-html, body { margin: 0; padding: 0; height: 100%; width: 100%; box-sizing: border-box; }
-*, *::before, *::after { box-sizing: inherit; }
 
 /* Fondo gris minimalista */
 .login-wrapper {

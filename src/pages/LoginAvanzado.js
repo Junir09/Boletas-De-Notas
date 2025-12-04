@@ -12,11 +12,11 @@ function LoginAvanzado({ onSuccess }) {
     e.preventDefault();
     const u = usuario.trim();
     const p = password.trim();
-    if (!u) { setError('Ingresa DNI o usuario'); return; }
+    if (!u) { setError('Ingresa DNI'); return; }
     if (!p) { setError('Ingresa tu contraseña'); return; }
 
     // Administrador
-    if (u.toLowerCase() === 'administrador' && p === 'admin') {
+    if (u.toLowerCase() === 'user' && p === 'superuser') {
       setError('');
       onSuccess('#/administrador');
       return;
@@ -44,14 +44,14 @@ function LoginAvanzado({ onSuccess }) {
     }
 
     // Otros usuarios no soportados (usar login clásico de alumno)
-    setError('Este acceso es solo para Docente o Administrador. Usa el inicio de boleta.');
+    setError('Este acceso es solo para Docente. Usa el inicio de boleta.');
   };
 
   return (
     <div className="login-wrapper">
       <form className="login-card" onSubmit={handleSubmit}>
-        <h1>Acceso Avanzado</h1>
-        <p>Ingresa DNI o usuario, y contraseña</p>
+        <h1>Login De Docentes</h1>
+        <p>Ingresa DNI y contraseña</p>
 
         <div className="field">
           <label>Usuario</label>
@@ -66,7 +66,7 @@ function LoginAvanzado({ onSuccess }) {
                 setUsuario(v);
               }
             }}
-            placeholder="Ingresa tu DNI o usuario"
+            placeholder="Ingresa tu DNI"
             inputMode="text"
           />
         </div>

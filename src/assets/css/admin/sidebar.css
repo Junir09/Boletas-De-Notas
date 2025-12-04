@@ -1,72 +1,65 @@
-/* Admin Sidebar */
 .sidebar {
   background: var(--color-sidebar-bg);
   color: var(--color-sidebar-text);
-  padding: 20px 16px;
+  padding: 22px 16px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  height: 100vh;
   position: sticky;
   top: 0;
-  height: 100vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-hover) var(--color-sidebar-bg);
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: var(--color-sidebar-bg);
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: var(--color-hover);
-  border-radius: 3px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-principal);
-}
-
+/* Título */
 .sidebar-title {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
   color: var(--color-white);
+  letter-spacing: .3px;
 }
 
-.sidebar-menu { display: flex; flex-direction: column; gap: 8px; }
+/* Botones */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 .sidebar-menu button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--color-sidebar-muted);
-  text-align: left;
+  gap: 12px;
   background: transparent;
   border: none;
-  padding: 10px 12px;
+  padding: 11px 12px;
+  font-size: 15px;
+  color: var(--color-sidebar-muted);
   border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s, color 0.2s, transform 0.12s ease;
+  transition: all 0.25s ease;
 }
 
-.sidebar-menu button:hover { background: var(--color-hover); color: #ffffff; }
-.sidebar-menu button.active { background: var(--color-principal); color: #ffffff; }
-.sidebar-menu button:active { transform: scale(0.98); }
-.sidebar-menu button svg { flex-shrink: 0; }
+.sidebar-menu button:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--color-white);
+}
+
+.sidebar-menu button.active {
+  background: var(--color-hover);
+  color: var(--color-white);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+}
 
 .logout-btn {
   margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
   color: var(--color-danger);
   font-weight: 600;
-  padding: 10px 12px;
-  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  transition: 0.25s;
+}
+
+.logout-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
 }

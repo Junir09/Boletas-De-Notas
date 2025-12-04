@@ -2,13 +2,13 @@
  * CONTENEDOR PRINCIPAL
 ****************************************************/
 .registrar-estudiantes {
-  padding: 24px;
+  padding: 26px;
+  max-width: 1050px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 34px;
   background: var(--color-fondo);
-  max-width: 1000px;
-  margin: 0 auto;
 }
 
 /****************************************************
@@ -16,35 +16,38 @@
 ****************************************************/
 .registrar-estudiantes .header-section h2 {
   margin: 0;
-  color: var(--color-principal);
+  font-size: 1.95rem;
   font-weight: 700;
-  font-size: 1.8rem;
+  color: var(--color-principal);
+  letter-spacing: -0.3px;
 }
 
 .registrar-estudiantes .header-section .intro-text {
   margin-top: 6px;
+  font-size: 1rem;
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  opacity: 0.85;
 }
 
 /****************************************************
- * CARD
+ * TARJETAS (Dashboard Rectangulares)
 ****************************************************/
 .registrar-estudiantes .card {
+  padding: 26px 28px;
   background: var(--color-card-bg);
-  border-radius: 14px;
-  padding: 22px 26px;
-  box-shadow: var(--shadow-weak);
+  border-radius: 12px;
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-weak);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .registrar-estudiantes .card h3 {
   margin: 0;
   font-size: 1.25rem;
-  color: var(--color-text-strong);
+  color: var(--color-principal);
+  font-weight: 700;
 }
 
 /****************************************************
@@ -52,35 +55,34 @@
 ****************************************************/
 .registrar-estudiantes .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
 }
 
 .registrar-estudiantes .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .registrar-estudiantes .field label {
+  font-size: 0.92rem;
   color: var(--color-text-label);
-  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .registrar-estudiantes .field input {
   padding: 10px 12px;
+  background: var(--color-white);
+  font-size: 0.95rem;
   border-radius: 8px;
   border: 1px solid var(--color-border);
-  font-size: 0.95rem;
-  color: var(--color-text);
-  background: white;
-  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
 .registrar-estudiantes .field input:focus {
-  border-color: var(--color-hover);
+  border-color: var(--color-accent);
   box-shadow: var(--shadow-focus);
-  background: #f9fbff;
 }
 
 /****************************************************
@@ -88,37 +90,40 @@
 ****************************************************/
 .registrar-estudiantes .status-error {
   background: var(--color-danger-soft);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  color: var(--color-danger);
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 8px;
   font-size: 0.9rem;
+  color: var(--color-danger);
+  border: 1px solid rgba(226, 85, 85, 0.35);
 }
 
 /****************************************************
- * BOTONES PROFESIONALES
+ * BOTONES ADMINISTRATIVOS
 ****************************************************/
 .registrar-estudiantes button {
   background: var(--color-principal);
-  color: white;
+  color: var(--color-white);
   border: none;
   padding: 10px 18px;
-  border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
 }
 
 .registrar-estudiantes button:hover {
   background: var(--color-hover);
-  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+  box-shadow: var(--shadow-weak);
 }
 
 .registrar-estudiantes button:active {
   transform: scale(0.97);
 }
 
+/****************************************************
+ * ACCIONES
+****************************************************/
 .registrar-estudiantes .actions.right {
   display: flex;
   justify-content: flex-end;
@@ -127,29 +132,27 @@
 .registrar-estudiantes .actions-row {
   display: flex;
   gap: 14px;
+  flex-wrap: wrap;
 }
 
 /****************************************************
- * FILE INPUT — moderno, corporativo
+ * FILE INPUT
 ****************************************************/
 .registrar-estudiantes .file-input {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
   border: 1px dashed var(--color-border);
-  padding: 18px;
   border-radius: 12px;
-  text-align: center;
-  color: var(--color-text);
   background: var(--color-fondo-alt);
+  padding: 22px;
+  text-align: center;
+  color: var(--color-text-muted);
+  cursor: pointer;
   transition: border 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .registrar-estudiantes .file-input:hover {
-  border-color: var(--color-hover);
+  border-color: var(--color-accent);
   background: #eef2ff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-weak);
 }
 
 .registrar-estudiantes .file-input input {
@@ -170,23 +173,24 @@
 }
 
 .registrar-estudiantes .modal-card {
-  background: white;
-  padding: 26px 30px;
+  background: var(--color-card-bg);
+  padding: 28px 32px;
+  width: min(360px, 92%);
   border-radius: 14px;
-  width: min(350px, 92%);
   box-shadow: var(--shadow-strong);
   text-align: center;
 }
 
 .registrar-estudiantes .modal-card h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   font-size: 1.3rem;
-  color: var(--color-text-strong);
+  color: var(--color-principal);
 }
 
 .registrar-estudiantes .modal-card p {
-  font-size: 0.95rem;
-  color: var(--color-text);
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .registrar-estudiantes .modal-card .modal-actions {

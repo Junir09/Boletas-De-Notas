@@ -1,6 +1,6 @@
 /****************************************************
  * LISTA ESTUDIANTES — DISEÑO ELEGANTE INSTITUCIONAL
-****************************************************/
+ ****************************************************/
 .lista-estudiantes {
   padding: 26px;
   display: flex;
@@ -13,7 +13,7 @@
 
 /****************************************************
  * HEADER
-****************************************************/
+ ****************************************************/
 .lista-estudiantes h2 {
   margin: 0;
   color: var(--color-principal);
@@ -29,8 +29,55 @@
 }
 
 /****************************************************
+ * TOOLBAR & FILTERS
+ ****************************************************/
+.lista-estudiantes .toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.lista-estudiantes .filters {
+  display: flex;
+  gap: 12px;
+}
+
+.lista-estudiantes .filters select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  outline: none;
+  min-width: 160px;
+  cursor: pointer;
+}
+
+.lista-estudiantes .btn-bulk-delete {
+  display: flex;
+  align-items: center;
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
+}
+
+.lista-estudiantes .btn-bulk-delete:hover {
+  background: #b91c1c; /* Darker red */
+  transform: translateY(-1px);
+}
+
+/****************************************************
  * TABLE WRAPPER
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .table-wrap {
   background: var(--color-card-bg);
   border-radius: 16px;
@@ -45,7 +92,7 @@
 
 /****************************************************
  * TABLE HEADERS
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .table thead th {
   text-align: left;
   background: var(--color-fondo-alt);
@@ -60,17 +107,18 @@
 
 /****************************************************
  * BODY CELLS
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .table tbody td {
   padding: 16px 18px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   font-size: 0.97rem;
+  vertical-align: middle;
 }
 
 /****************************************************
  * ROW HOVER
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .table tbody tr:hover {
   background: rgba(16, 40, 68, 0.06); /* azul institucional ultra suave */
   transition: background 0.18s ease;
@@ -80,9 +128,54 @@
   border-bottom: none;
 }
 
+.lista-estudiantes .editing-row {
+  background: rgba(37, 99, 235, 0.05) !important;
+}
+
+/****************************************************
+ * ACTIONS & INPUTS
+ ****************************************************/
+.lista-estudiantes .actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.lista-estudiantes .btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lista-estudiantes .btn-edit { color: var(--color-principal); }
+.lista-estudiantes .btn-edit:hover { background: rgba(16, 40, 68, 0.1); }
+
+.lista-estudiantes .btn-delete { color: var(--color-danger); }
+.lista-estudiantes .btn-delete:hover { background: var(--color-danger-soft); }
+
+.lista-estudiantes .btn-save { color: #16a34a; }
+.lista-estudiantes .btn-save:hover { background: rgba(22, 163, 74, 0.1); }
+
+.lista-estudiantes .btn-cancel { color: var(--color-text-muted); }
+.lista-estudiantes .btn-cancel:hover { background: rgba(0,0,0,0.05); }
+
+.lista-estudiantes .edit-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: white;
+}
+
 /****************************************************
  * EMPTY STATE
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .table .empty-state {
   text-align: center;
   padding: 50px 20px;
@@ -93,7 +186,7 @@
 
 /****************************************************
  * STATUS ERROR
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .status-error {
   background: var(--color-danger-soft);
   border: 1px solid var(--color-danger);
@@ -106,7 +199,7 @@
 
 /****************************************************
  * BADGES — ESTILO PREMIUM ADMINISTRATIVO
-****************************************************/
+ ****************************************************/
 .lista-estudiantes .badge-grado,
 .lista-estudiantes .badge-seccion,
 .lista-estudiantes .badge-sin-asignar {
@@ -140,4 +233,121 @@
   background: var(--color-fondo-alt);
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+/****************************************************
+ * MODAL OVERLAY & CARD
+ ****************************************************/
+.lista-estudiantes-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5); /* Backdrop oscuro */
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.lista-estudiantes-modal-card {
+  background: var(--color-card-bg);
+  padding: 32px;
+  border-radius: 20px;
+  width: min(440px, 90%);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lista-estudiantes-modal-card h3 {
+  margin: 16px 0 8px;
+  font-size: 1.35rem;
+  color: var(--color-principal);
+  font-weight: 700;
+}
+
+.lista-estudiantes-modal-card p {
+  margin: 0 0 24px;
+  color: var(--color-text);
+  line-height: 1.5;
+  font-size: 1rem;
+}
+
+/* Icono del modal */
+.lista-estudiantes-modal-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.lista-estudiantes-modal-icon.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.lista-estudiantes-modal-icon.error,
+.lista-estudiantes-modal-icon.confirm {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.lista-estudiantes-modal-icon.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Botones del modal */
+.lista-estudiantes-modal-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.lista-estudiantes-modal-actions button {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s;
+  font-size: 0.95rem;
+}
+
+.lista-estudiantes-modal-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.lista-estudiantes-modal-actions .btn-primary {
+  background: var(--color-principal);
+  color: white;
+}
+
+.lista-estudiantes-modal-actions .btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.lista-estudiantes-modal-actions .btn-secondary {
+  background: var(--color-fondo-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

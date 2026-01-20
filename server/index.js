@@ -620,6 +620,36 @@ app.put('/api/estudiantes/:dni', async (req, res) => {
 });
 
 // Eliminar estudiante
+app.delete('/api/estudiantes-masivo', async (req, res) => {
+  const grado = req.query.grado ? Number(req.query.grado) : null;
+  const seccion = req.query.seccion ? String(req.query.seccion).trim() : null;
+
+  if (!grado && !seccion) {
+    return res.status(400).json({ ok: false, error: 'Debe especificar grado o sección para eliminar' });
+  }
+
+  try {
+    const conditions = [];
+    const params = [];
+
+    if (grado) {
+      conditions.push('grado = ?');
+      params.push(grado);
+    }
+    if (seccion) {
+      conditions.push('seccion = ?');
+      params.push(seccion);
+    }
+
+    const sql = `DELETE FROM estudiantes WHERE ${conditions.join(' AND ')}`;
+    const [result] = await pool.query(sql, params);
+    
+    res.json({ ok: true, affected: result.affectedRows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.delete('/api/estudiantes/:dni', async (req, res) => {
   const dni = String(req.params.dni || '').trim();
   if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });

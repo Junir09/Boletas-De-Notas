@@ -74,10 +74,10 @@ function ListaDocentes() {
       const j2 = await r2.json();
       const list = (r2.ok && j2.ok && Array.isArray(j2.data)) ? j2.data : [];
       setModal(m => ({ ...m, cursos: list }));
-      // refrescar lista de docentes
       const refresh = await fetch(api('/api/docentes'));
       const jdoc = await refresh.json();
       setData(Array.isArray(jdoc.data) ? jdoc.data : []);
+      await cargarAsignados(dni);
       try { window.dispatchEvent(new Event('cursos-updated')); } catch (_) {}
     } catch (e) {
       setModal(m => ({ ...m, error: e.message }));
@@ -102,6 +102,7 @@ function ListaDocentes() {
       const refresh = await fetch(api('/api/docentes'));
       const j2 = await refresh.json();
       setData(Array.isArray(j2.data) ? j2.data : []);
+      await cargarAsignados(dni);
       try { window.dispatchEvent(new Event('cursos-updated')); } catch (_) {}
     } catch (e) {
       setModal(m => ({ ...m, error: e.message }));
@@ -169,6 +170,14 @@ function ListaDocentes() {
     }
   };
 
+  const cerrarAsignados = (dni) => {
+    setAsignadosByDni(m => {
+      const next = { ...m };
+      delete next[dni];
+      return next;
+    });
+  };
+
   const quitarAsignacionX = async (dni, cursoId) => {
     try {
       const resp = await fetch(api('/api/asignaciones'), {
@@ -222,26 +231,34 @@ function ListaDocentes() {
                   </td>
                   <td>
                     {Array.isArray(asignadosByDni[d.dni]) ? (
-                      asignadosByDni[d.dni].length > 0 ? (
-                        <div className="inline-actions">
-                          {asignadosByDni[d.dni].map(c => (
+                      <div className="inline-actions">
+                        {asignadosByDni[d.dni].length > 0 ? (
+                          asignadosByDni[d.dni].map(c => (
                             <span key={c.id}>
                               {c.nombre}
                               <button type="button" onClick={() => quitarAsignacionX(d.dni, c.id)} title="Quitar">
                                 <XCircle size={14} />
                               </button>
                             </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span>(Sin cursos)</span>
-                      )
+                          ))
+                        ) : (
+                          <span>(Sin cursos)</span>
+                        )}
+                        <button type="button" onClick={() => cerrarAsignados(d.dni)}>Cerrar</button>
+                      </div>
                     ) : (
                       <div className="inline-actions">
-                        <span>{d.cursos || ''}</span>
-                        <button type="button" onClick={() => cargarAsignados(d.dni)} disabled={!!loadingByDni[d.dni]} title={loadingByDni[d.dni] ? 'Cargando...' : 'Editar'}>
-                          <Edit size={16} />
-                        </button>
+                        <span>{(d.cursos && d.cursos.trim()) ? d.cursos : 'Sin Cursos Asignados'}</span>
+                        {(d.cursos && d.cursos.trim()) && (
+                          <button
+                            type="button"
+                            onClick={() => cargarAsignados(d.dni)}
+                            disabled={!!loadingByDni[d.dni]}
+                            title={loadingByDni[d.dni] ? 'Cargando...' : 'Editar'}
+                          >
+                            <Edit size={16} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>

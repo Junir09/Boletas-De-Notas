@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import '../assets/css/admin/configuracion.css';
 import { api } from '../api';
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff, Upload, ZoomIn, ZoomOut, Check, X, AlertTriangle } from 'lucide-react';
 
 function ConfiguracionSistema() {
   const [welcomeTitle, setWelcomeTitle] = useState('');
@@ -29,6 +29,15 @@ function ConfiguracionSistema() {
   const [selCursoId, setSelCursoId] = useState(0);
   const [selGradoId, setSelGradoId] = useState(0);
   const [selSeccionId, setSelSeccionId] = useState(0);
+
+  // Modals & Cropper State
+  const [modalConfig, setModalConfig] = useState({ type: null, subType: null, id: null });
+  const [cropImage, setCropImage] = useState(null);
+  const [cropScale, setCropScale] = useState(1);
+  const [cropPos, setCropPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const cropperRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -81,15 +90,68 @@ function ConfiguracionSistema() {
     } catch (_) {}
   };
 
-  const onFile = async (e) => {
+  // === CROPPER LOGIC ===
+  const onFile = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      setLogoDataUrl(dataUrl);
+      setCropImage(reader.result);
+      setCropScale(1);
+      setCropPos({ x: 0, y: 0 });
+      setModalConfig({ type: 'cropper' });
     };
     reader.readAsDataURL(file);
+    e.target.value = null; // Reset input
+  };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - cropPos.x, y: e.clientY - cropPos.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setCropPos({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const saveCrop = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.src = cropImage;
+    
+    // Define output size (e.g., 200x200 for logo)
+    canvas.width = 200;
+    canvas.height = 200;
+
+    // The crop view is 300x300 in CSS (example), we need to map the visible area
+    // Simplified crop logic: Draw image with current transform onto the canvas
+    // We need to calculate the relative position of the image center
+    
+    // For simplicity in this context, we'll draw the image centered and scaled
+    // This is a basic approximation of "what you see is what you get" relative to the center
+    
+    img.onload = () => {
+        ctx.fillStyle = 'transparent';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Translate to center
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(cropScale, cropScale);
+        ctx.translate(cropPos.x / cropScale, cropPos.y / cropScale);
+        
+        // Draw image centered
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        
+        setLogoDataUrl(canvas.toDataURL('image/png'));
+        setModalConfig({ type: null });
+    };
   };
 
   const guardar = () => {
@@ -101,8 +163,7 @@ function ConfiguracionSistema() {
         adminPassword: String(adminPassword || 'superuser')
       };
       localStorage.setItem('config', JSON.stringify(cfg));
-      setStatus('Guardado');
-      setTimeout(() => setStatus(''), 1500);
+      setModalConfig({ type: 'save-success' });
     } catch {
       setStatus('Error al guardar');
     }
@@ -158,16 +219,38 @@ function ConfiguracionSistema() {
     } catch (_) { setStatus('No se pudo actualizar'); }
   };
 
-  const eliminarGrado = async (id) => {
-    if (!window.confirm('¿Eliminar este grado?')) return;
+  const solicitarEliminarGrado = (id) => {
+    setModalConfig({ type: 'delete-confirm', subType: 'grado', id });
+  };
+
+  const solicitarEliminarSeccion = (id) => {
+    setModalConfig({ type: 'delete-confirm', subType: 'seccion', id });
+  };
+
+  const confirmarEliminacion = async () => {
+    const { subType, id } = modalConfig;
     try {
-      const resp = await fetch(api(`/api/grados/${id}`), { method: 'DELETE' });
-      const json = await resp.json();
-      if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al eliminar'); return; }
-      await cargarGrados();
-      setStatus('Grado eliminado');
-      setTimeout(() => setStatus(''), 1500);
-    } catch (_) { setStatus('No se pudo eliminar'); }
+        let endpoint = '';
+        if (subType === 'grado') endpoint = `/api/grados/${id}`;
+        else if (subType === 'seccion') endpoint = `/api/secciones/${id}`;
+
+        const resp = await fetch(api(endpoint), { method: 'DELETE' });
+        const json = await resp.json();
+        
+        if (!resp.ok || !json.ok) { 
+            setStatus(json.error || 'Error al eliminar'); 
+            setModalConfig({ type: null });
+            return; 
+        }
+
+        if (subType === 'grado') await cargarGrados();
+        else await cargarSecciones();
+
+        setModalConfig({ type: 'delete-success' });
+    } catch (_) {
+        setStatus('No se pudo eliminar');
+        setModalConfig({ type: null });
+    }
   };
 
   // === SECCIONES ===
@@ -216,18 +299,6 @@ function ConfiguracionSistema() {
       setStatus('Sección actualizada');
       setTimeout(() => setStatus(''), 1500);
     } catch (_) { setStatus('No se pudo actualizar'); }
-  };
-
-  const eliminarSeccion = async (id) => {
-    if (!window.confirm('¿Eliminar esta sección?')) return;
-    try {
-      const resp = await fetch(api(`/api/secciones/${id}`), { method: 'DELETE' });
-      const json = await resp.json();
-      if (!resp.ok || !json.ok) { setStatus(json.error || 'Error al eliminar'); return; }
-      await cargarSecciones();
-      setStatus('Sección eliminada');
-      setTimeout(() => setStatus(''), 1500);
-    } catch (_) { setStatus('No se pudo eliminar'); }
   };
 
   const crearAsignacionCursoGrado = async () => {
@@ -344,7 +415,7 @@ function ConfiguracionSistema() {
                       <button type="button" onClick={() => iniciarEdicionGrado(g)} title="Editar">
                         <Edit size={16} />
                       </button>
-                      <button type="button" onClick={() => eliminarGrado(g.id)} title="Eliminar">
+                      <button type="button" onClick={() => solicitarEliminarGrado(g.id)} title="Eliminar">
                         <Trash2 size={16} />
                       </button>
                     </>
@@ -398,7 +469,7 @@ function ConfiguracionSistema() {
                       <button type="button" onClick={() => iniciarEdicionSeccion(s)} title="Editar">
                         <Edit size={16} />
                       </button>
-                      <button type="button" onClick={() => eliminarSeccion(s.id)} title="Eliminar">
+                      <button type="button" onClick={() => solicitarEliminarSeccion(s.id)} title="Eliminar">
                         <Trash2 size={16} />
                       </button>
                     </>
@@ -472,6 +543,148 @@ function ConfiguracionSistema() {
       </div>
 
       {status && <div className="status-msg">{status}</div>}
+
+      {/* MODAL OVERLAYS */}
+      {modalConfig.type === 'save-success' && (
+        <div className="configuracion-modal-overlay">
+          <div className="configuracion-modal-card">
+            <div className="configuracion-modal-icon success">
+              <Check size={40} />
+            </div>
+            <h3>configuracion guardada</h3>
+            <p>Los cambios han sido aplicados correctamente.</p>
+            <div className="configuracion-modal-actions">
+              <button onClick={() => setModalConfig({ type: null })} className="configuracion-btn-primary">
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalConfig.type === 'delete-confirm' && (
+        <div className="configuracion-modal-overlay">
+          <div className="configuracion-modal-card">
+            <div className="configuracion-modal-icon warning">
+              <AlertTriangle size={40} />
+            </div>
+            <h3>¿Estás seguro?</h3>
+            <p>Estas seguro de eliminar este grado/Seccion</p>
+            <div className="configuracion-modal-actions">
+              <button onClick={() => setModalConfig({ type: null })} className="configuracion-btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={confirmarEliminacion} className="configuracion-btn-danger">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalConfig.type === 'delete-success' && (
+        <div className="configuracion-modal-overlay">
+          <div className="configuracion-modal-card">
+            <div className="configuracion-modal-icon success">
+              <Check size={40} />
+            </div>
+            <h3>Eliminacion Completa</h3>
+            <p>El registro ha sido eliminado exitosamente.</p>
+            <div className="configuracion-modal-actions">
+              <button onClick={() => setModalConfig({ type: null })} className="configuracion-btn-primary">
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalConfig.type === 'cropper' && (
+        <div className="configuracion-modal-overlay">
+          <div className="configuracion-modal-card wide">
+            <h3>Recortar Logo</h3>
+            <div className="cropper-layout">
+              <div className="cropper-section">
+                <div 
+                  className="cropper-container"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  <img 
+                    src={cropImage} 
+                    style={{
+                      transform: `translate(${cropPos.x}px, ${cropPos.y}px) scale(${cropScale})`,
+                      cursor: isDragging ? 'grabbing' : 'grab'
+                    }} 
+                    draggable={false}
+                    alt="Crop source"
+                  />
+                  <div className="cropper-overlay-guide"></div>
+                </div>
+                <div className="cropper-controls">
+                    <ZoomOut size={20} onClick={() => setCropScale(s => Math.max(0.1, s - 0.1))} style={{cursor: 'pointer'}} />
+                    <input 
+                      type="range" 
+                      min="0.1" 
+                      max="3" 
+                      step="0.1" 
+                      value={cropScale} 
+                      onChange={e => setCropScale(Number(e.target.value))} 
+                    />
+                    <ZoomIn size={20} onClick={() => setCropScale(s => Math.min(3, s + 0.1))} style={{cursor: 'pointer'}} />
+                </div>
+              </div>
+
+              <div className="preview-section">
+                <h4>Vista previa Login</h4>
+                <div className="login-mockup">
+                  <div className="login-mockup-content">
+                    <div className="login-mockup-logo-container">
+                        <div style={{
+                            width: '100%', 
+                            height: '100%', 
+                            overflow: 'hidden', 
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#fff',
+                            borderRadius: '50%'
+                        }}>
+                             <img 
+                                src={cropImage} 
+                                style={{
+                                    transform: `translate(${cropPos.x}px, ${cropPos.y}px) scale(${cropScale})`,
+                                    transformOrigin: 'center center'
+                                }} 
+                                alt="Preview"
+                             />
+                        </div>
+                    </div>
+                    <div className="login-mockup-inputs">
+                        <div className="mockup-line"></div>
+                        <div className="mockup-line"></div>
+                        <div className="mockup-btn"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="configuracion-modal-actions">
+              <button onClick={() => setModalConfig({ type: null })} className="configuracion-btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={saveCrop} className="configuracion-btn-primary">
+                Recortar y Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

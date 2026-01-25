@@ -11,13 +11,13 @@ export default function Boletas({ seleccion }) {
   const [promOpen, setPromOpen] = useState(false);
   const [promNombre, setPromNombre] = useState('');
   const [promSeleccion, setPromSeleccion] = useState([]);
-  const scrollRef = useRef(null);
-  const [scrollMax, setScrollMax] = useState(0);
-  const [scrollVal, setScrollVal] = useState(0);
   const [delOpen, setDelOpen] = useState(false);
   const [promLinks, setPromLinks] = useState({});
-  const [pageCount, setPageCount] = useState(1);
-  const [currentPage, setCurrentPage] = useState(0);
+
+  // Estados para Modales (Reemplazo de alerts/prompts)
+  const [alertInfo, setAlertInfo] = useState({ open: false, title: 'Mensaje', msg: '' });
+  const [addActOpen, setAddActOpen] = useState(false);
+  const [addActName, setAddActName] = useState('');
 
   const cargarAlumnos = useCallback(async () => {
     setLoading(true);
@@ -55,6 +55,22 @@ export default function Boletas({ seleccion }) {
         notasInicial[act.id] = m;
       }
       setNotas(notasInicial);
+
+      // Cargar dependencias de promedios
+      const rD = await fetch(api(`/api/promedio-detalle${qs}`));
+      const jD = await rD.json();
+      const links = {};
+      if (jD.ok && Array.isArray(jD.data)) {
+        for (const row of jD.data) {
+          const pid = Number(row.promedio_id);
+          const aid = Number(row.actividad_id);
+          if (pid && aid) {
+            if (!links[pid]) links[pid] = [];
+            links[pid].push(aid);
+          }
+        }
+      }
+      setPromLinks(links);
     } catch (e) {
       setActividades([]);
       setNotas({});
@@ -69,17 +85,21 @@ export default function Boletas({ seleccion }) {
 
   
 
-  const agregarActividad = async () => {
-    const nombre = prompt('Nombre de la actividad/práctica');
-    if (!nombre) return;
+  const agregarActividad = () => {
+    setAddActName('');
+    setAddActOpen(true);
+  };
+
+  const confirmarAgregarActividad = async () => {
+    if (!addActName.trim()) return;
     try {
       const resp = await fetch(api('/api/curso-actividades'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ curso_id: seleccion.cursoId, grado_id: seleccion.gradoId, seccion_id: seleccion.seccionId, nombre })
+        body: JSON.stringify({ curso_id: seleccion.cursoId, grado_id: seleccion.gradoId, seccion_id: seleccion.seccionId, nombre: addActName.trim() })
       });
       const json = await resp.json();
-      if (resp.ok && json.ok) { await cargarActividades(); }
+      if (resp.ok && json.ok) { await cargarActividades(); setAddActOpen(false); }
     } catch (e) {}
   };
 
@@ -94,8 +114,8 @@ export default function Boletas({ seleccion }) {
   };
 
   const calcularPromedio = async () => {
-    if (!promNombre.trim()) { alert('Ingresa un nombre para el promedio'); return; }
-    if (promSeleccion.length === 0) { alert('Selecciona al menos una actividad'); return; }
+    if (!promNombre.trim()) { setAlertInfo({ open: true, title: 'Atención', msg: 'Ingresa un nombre para el promedio' }); return; }
+    if (promSeleccion.length === 0) { setAlertInfo({ open: true, title: 'Atención', msg: 'Selecciona al menos una actividad' }); return; }
     try {
       const resp = await fetch(api('/api/curso-actividades'), {
         method: 'POST',
@@ -103,7 +123,7 @@ export default function Boletas({ seleccion }) {
         body: JSON.stringify({ curso_id: seleccion.cursoId, grado_id: seleccion.gradoId, seccion_id: seleccion.seccionId, nombre: promNombre.trim() })
       });
       const json = await resp.json();
-      if (!(resp.ok && json.ok && json.id)) { alert('No se pudo crear la actividad de promedio'); return; }
+      if (!(resp.ok && json.ok && json.id)) { setAlertInfo({ open: true, title: 'Error', msg: 'No se pudo crear la actividad de promedio' }); return; }
       const nuevaId = json.id;
       const payload = [];
       for (const a of alumnos) {
@@ -122,11 +142,19 @@ export default function Boletas({ seleccion }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actividad_id: nuevaId, notas: payload })
       });
+
+      // Guardar dependencias en BD
+      await fetch(api('/api/promedio-detalle'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promedio_id: nuevaId, actividades_ids: promSeleccion })
+      });
+
       setPromLinks(prev => ({ ...prev, [nuevaId]: [...promSeleccion] }));
       setPromOpen(false);
       await cargarActividades();
     } catch (e) {
-      alert('Error calculando promedio');
+      setAlertInfo({ open: true, title: 'Error', msg: 'Error calculando promedio' });
     }
   };
 
@@ -137,23 +165,24 @@ export default function Boletas({ seleccion }) {
     return /^UNIDAD\s*\d+$/i.test(s);
   };
 
-  const clamp20 = (v) => {
-    const n = Number(v);
-    if (isNaN(n)) return '';
-    const c = Math.max(0, Math.min(20, n));
-    return Math.round(c * 100) / 100;
-  };
-
   const onChangeNota = (actividadId, dni, val) => {
-    const clamped = clamp20(val);
+    // Validar solo números y punto decimal
+    if (!/^\d*\.?\d*$/.test(val)) return;
+
+    // Validar rango 0-20
+    if (val !== '') {
+      const n = parseFloat(val);
+      if (n > 20) val = '20';
+    }
+
     setNotas(prev => {
-      const next = { ...prev, [actividadId]: { ...(prev[actividadId] || {}), [dni]: clamped } };
+      const next = { ...prev, [actividadId]: { ...(prev[actividadId] || {}), [dni]: val } };
       for (const [pid, srcs] of Object.entries(promLinks)) {
         if (srcs.includes(actividadId)) {
           let suma = 0;
           for (const srcId of srcs) {
-            const raw = (srcId === actividadId ? clamped : (next[srcId] && next[srcId][dni])) !== undefined ? (srcId === actividadId ? clamped : (next[srcId] && next[srcId][dni])) : '';
-            const n = Number(raw);
+            const raw = (srcId === actividadId ? val : (next[srcId] && next[srcId][dni]));
+            const n = (raw === '' || raw == null) ? 0 : Number(raw);
             suma += isNaN(n) ? 0 : n;
           }
           const denom = srcs.length;
@@ -181,15 +210,79 @@ export default function Boletas({ seleccion }) {
         });
       }
     }
-    alert('Notas guardadas');
+    setAlertInfo({ open: true, title: 'Éxito', msg: 'Notas guardadas correctamente' });
   };
 
   const confirmarEliminarActividad = async () => {
     if (!actividadSel) { setDelOpen(false); return; }
+
     try {
       const resp = await fetch(api(`/api/curso-actividades/${actividadSel}`), { method: 'DELETE' });
       const json = await resp.json();
+      
       if (resp.ok && json.ok) {
+        // Simulación de estado para recálculo en cascada
+        const currentNotas = { ...notas };
+        const changesToSave = {}; // { pid: payload[] }
+        let queue = [actividadSel];
+        const processed = new Set();
+
+        let head = 0;
+        while(head < queue.length) {
+          const changedId = queue[head++];
+          if (processed.has(changedId) && changedId !== actividadSel) continue;
+          if (changedId !== actividadSel) processed.add(changedId);
+
+          for (const [pidStr, srcs] of Object.entries(promLinks)) {
+            const pid = Number(pidStr);
+            if (srcs.includes(changedId)) {
+              // Filtrar la actividad eliminada (si es la que se eliminó)
+              const effectiveSrcs = srcs.filter(id => id !== actividadSel);
+              
+              const newVals = {};
+              let hasChanges = false;
+              
+              for (const a of alumnos) {
+                let suma = 0;
+                for (const srcId of effectiveSrcs) {
+                  const raw = (currentNotas[srcId] && currentNotas[srcId][a.dni]);
+                  const n = (raw === '' || raw == null) ? 0 : Number(raw);
+                  suma += isNaN(n) ? 0 : n;
+                }
+                const denom = effectiveSrcs.length;
+                const prom = denom > 0 ? Math.round((suma / denom) * 100) / 100 : 0;
+                
+                newVals[a.dni] = prom;
+                
+                const prev = (currentNotas[pid] && currentNotas[pid][a.dni]);
+                if (prev !== prom) hasChanges = true;
+              }
+              
+              // Si hubo cambios o es dependencia directa del eliminado (para asegurar consistencia)
+              if (hasChanges || changedId === actividadSel) {
+                const payload = [];
+                for (const [dni, nota] of Object.entries(newVals)) {
+                   payload.push({ dni, nota });
+                }
+                changesToSave[pid] = payload;
+                currentNotas[pid] = newVals;
+                if (!queue.includes(pid)) queue.push(pid);
+              }
+            }
+          }
+        }
+
+        // Guardar todos los cambios acumulados
+        for (const [pid, payload] of Object.entries(changesToSave)) {
+           if (payload.length > 0) {
+            await fetch(api('/api/actividad-notas/bulk'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ actividad_id: Number(pid), notas: payload })
+            });
+           }
+        }
+
         setDelOpen(false);
         await cargarActividades();
       } else {
@@ -202,39 +295,6 @@ export default function Boletas({ seleccion }) {
     const el = document.getElementById(`nota-${actividadId}-${dni}`);
     if (el) el.focus();
   };
-
-  useEffect(() => {
-    const updateScroll = () => {
-      if (!scrollRef.current) return;
-      const max = Math.max(0, scrollRef.current.scrollWidth - scrollRef.current.clientWidth);
-      setScrollMax(max);
-      const left = scrollRef.current.scrollLeft;
-      setScrollVal(left);
-      const pc = Math.max(1, Math.ceil(scrollRef.current.scrollWidth / scrollRef.current.clientWidth));
-      setPageCount(pc);
-      const cp = Math.round(left / scrollRef.current.clientWidth);
-      setCurrentPage(Math.min(pc - 1, Math.max(0, cp)));
-    };
-    updateScroll();
-    window.addEventListener('resize', updateScroll);
-    return () => window.removeEventListener('resize', updateScroll);
-  }, [actividades, alumnos]);
-
-  const goToPage = (p) => {
-    if (!scrollRef.current) return;
-    const c = Math.min(pageCount - 1, Math.max(0, p));
-    const left = c * scrollRef.current.clientWidth;
-    try {
-      scrollRef.current.scrollTo({ left, behavior: 'smooth' });
-    } catch (_) {
-      scrollRef.current.scrollLeft = left;
-    }
-    setCurrentPage(c);
-    setScrollVal(left);
-  };
-
-  const prevPage = () => goToPage(currentPage - 1);
-  const nextPage = () => goToPage(currentPage + 1);
 
   return (
     <>
@@ -255,15 +315,7 @@ export default function Boletas({ seleccion }) {
         </div>
         <div className="estudiantes-table" style={{ marginTop: 16 }}>
           <div className="table-scroll">
-            <div className={`scroll-area${actividades.length === 0 ? ' no-activities' : ''}`} ref={scrollRef} onScroll={() => {
-              const el = scrollRef.current;
-              const left = el ? el.scrollLeft : 0;
-              setScrollVal(left);
-              if (el) {
-                const cp = Math.round(left / el.clientWidth);
-                setCurrentPage(Math.min(pageCount - 1, Math.max(0, cp)));
-              }
-            }}>
+            <div className={`scroll-area${actividades.length === 0 ? ' no-activities' : ''}`}>
               <table>
                 <thead>
                   <tr>
@@ -283,15 +335,13 @@ export default function Boletas({ seleccion }) {
                         <td key={act.id + ':' + a.dni}>
                           <input
                             id={`nota-${act.id}-${a.dni}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="20"
+                            type="text"
+                            inputMode="decimal"
                             value={(notas[act.id] && notas[act.id][a.dni]) !== undefined ? notas[act.id][a.dni] : ''}
                             onChange={e => onChangeNota(act.id, a.dni, e.target.value)}
-                            onBlur={e => onChangeNota(act.id, a.dni, e.target.value)}
                             className="nota-input"
                             disabled={Boolean(promLinks[act.id]) || esPromedioPorNombre(act.nombre)}
+                            autoComplete="off"
                             onKeyDown={e => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -310,29 +360,6 @@ export default function Boletas({ seleccion }) {
                 </tbody>
               </table>
             </div>
-            {actividades.length > 0 && scrollMax > 0 && (
-              <div className="scroll-controls">
-                <button onClick={prevPage} disabled={currentPage <= 0}>◀</button>
-                <input
-                  type="range"
-                  className="scroll-slider"
-                  min={0}
-                  max={scrollMax}
-                  value={scrollVal}
-                  onChange={e => {
-                    const v = Number(e.target.value);
-                    setScrollVal(v);
-                    if (scrollRef.current) {
-                      scrollRef.current.scrollLeft = v;
-                      const cp = Math.round(v / scrollRef.current.clientWidth);
-                      setCurrentPage(Math.min(pageCount - 1, Math.max(0, cp)));
-                    }
-                  }}
-                />
-                <button onClick={nextPage} disabled={currentPage >= pageCount - 1}>▶</button>
-                <span style={{ minWidth: 60, textAlign: 'center' }}>{`${currentPage + 1}/${pageCount}`}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -351,9 +378,9 @@ export default function Boletas({ seleccion }) {
               </div>
               <div>
                 <p>Selecciona actividades a promediar:</p>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div className="activities-list">
                   {actividades.map(a => (
-                    <label key={a.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <label key={a.id} className="activity-item">
                       <input type="checkbox" checked={promSeleccion.includes(a.id)} onChange={() => toggleSeleccion(a.id)} />
                       <span>{a.nombre}</span>
                     </label>
@@ -381,6 +408,51 @@ export default function Boletas({ seleccion }) {
               <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
                 <button onClick={confirmarEliminarActividad}>Eliminar</button>
                 <button onClick={() => setDelOpen(false)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Alerta Genérica */}
+      {alertInfo.open && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3>{alertInfo.title}</h3>
+              <button className="close" onClick={() => setAlertInfo({ ...alertInfo, open: false })}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>{alertInfo.msg}</p>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => setAlertInfo({ ...alertInfo, open: false })}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Agregar Actividad */}
+      {addActOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3>Nueva actividad</h3>
+              <button className="close" onClick={() => setAddActOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: 8 }}>Nombre de la actividad/práctica:</p>
+              <input 
+                type="text" 
+                value={addActName} 
+                onChange={e => setAddActName(e.target.value)}
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && confirmarAgregarActividad()}
+                placeholder="Ej. Práctica 1"
+              />
+              <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+                <button onClick={confirmarAgregarActividad}>Crear</button>
+                <button onClick={() => setAddActOpen(false)}>Cancelar</button>
               </div>
             </div>
           </div>

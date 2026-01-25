@@ -1,5 +1,104 @@
-.cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.curso-card { background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-weak); transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
-.curso-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-strong); }
-.curso-card h3 { margin: 0 0 8px 0; color: var(--color-principal); font-size: 1.1rem; }
-.curso-card p { margin: 0; color: var(--color-text-muted); font-size: 0.9rem; }
+/* =====================================================
+   ALUMNOS – CURSOS (ESTILOS AISLADOS)
+   ===================================================== */
+
+.alumno-cursos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- TÍTULOS ---------- */
+.alumno-cursos > h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--color-principal);
+  margin: 0;
+}
+
+.alumno-cursos > h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin: 0 0 12px 0;
+}
+
+/* ---------- BLOQUE DOCENTE ---------- */
+.alumno-cursos > div > div {
+  margin-bottom: 22px;
+}
+
+.alumno-cursos > div > div > h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-label);
+  margin-bottom: 10px;
+}
+
+/* ---------- GRID ---------- */
+.alumno-cursos .cursos-grid {
+  margin-top: 6px;
+}
+
+/* ---------- TARJETA CURSO (MEJORA REAL) ---------- */
+.alumno-cursos .curso-card {
+  position: relative;
+  padding-top: 20px;
+}
+
+/* línea superior decorativa */
+.alumno-cursos .curso-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-principal)
+  );
+  opacity: 0.9;
+}
+
+/* hover profesional */
+.alumno-cursos .curso-card:hover {
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* ---------- TEXTO ---------- */
+.alumno-cursos .curso-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.alumno-cursos .curso-card p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- INDICADOR ACCIÓN ---------- */
+.alumno-cursos .curso-card::after {
+  content: 'Ver boleta →';
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.alumno-cursos .curso-card:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---------- ESTADO SIN CURSOS ---------- */
+.alumno-cursos p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}

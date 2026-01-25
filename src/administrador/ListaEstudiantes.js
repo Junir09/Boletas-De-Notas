@@ -25,7 +25,7 @@ function ListaEstudiantes() {
 
   // Edición
   const [editingDni, setEditingDni] = useState('');
-  const [editData, setEditData] = useState({ apellidos: '', nombres: '', grado: '', seccion: '' });
+  const [editData, setEditData] = useState({ apellidos: '', nombres: '', grado: '', seccion: '', grado_id: '', seccion_id: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -196,13 +196,15 @@ function ListaEstudiantes() {
       apellidos: student.apellidos || '',
       nombres: student.nombres || '',
       grado: student.grado || '',
-      seccion: student.seccion || ''
+      seccion: student.seccion || '',
+      grado_id: student.grado_id || '',
+      seccion_id: student.seccion_id || ''
     });
   };
 
   const handleCancelEdit = () => {
     setEditingDni('');
-    setEditData({ apellidos: '', nombres: '', grado: '', seccion: '' });
+    setEditData({ apellidos: '', nombres: '', grado: '', seccion: '', grado_id: '', seccion_id: '' });
   };
 
   const handleSaveEdit = async () => {
@@ -253,7 +255,7 @@ function ListaEstudiantes() {
           <select value={filtroGrado} onChange={e => setFiltroGrado(e.target.value)}>
             <option value="">Todos los grados</option>
             {grados.map(g => (
-              <option key={g.id} value={g.nombre.replace('°','').trim()}>{g.nombre}</option>
+              <option key={g.id} value={g.nombre}>{g.nombre}</option>
             ))}
           </select>
           <select value={filtroSeccion} onChange={e => setFiltroSeccion(e.target.value)}>
@@ -322,14 +324,23 @@ function ListaEstudiantes() {
                       {isEditing ? (
                         <select 
                           className="edit-input"
-                          value={editData.grado} 
-                          onChange={ev => setEditData({...editData, grado: ev.target.value})}
+                          value={editData.grado_id || ''} 
+                          onChange={ev => {
+                             const gid = Number(ev.target.value);
+                             // Encontrar nombre para visualización si es necesario, aunque el backend prioriza ID
+                             const gObj = grados.find(g => g.id === gid);
+                             setEditData({
+                               ...editData, 
+                               grado_id: gid || '', 
+                               grado: gObj ? gObj.nombre : ''
+                             });
+                          }}
                         >
                           <option value="">-</option>
-                          {[1,2,3,4,5,6].map(g => <option key={g} value={g}>{g}°</option>)}
+                          {grados.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
                         </select>
                       ) : (
-                        e.grado ? <span className="badge-grado">{e.grado}°</span> : <span className="badge-sin-asignar">Sin asignar</span>
+                        e.grado ? <span className="badge-grado">{String(e.grado).includes('°') ? e.grado : `${e.grado}°`}</span> : <span className="badge-sin-asignar">Sin asignar</span>
                       )}
                     </td>
 
@@ -338,11 +349,19 @@ function ListaEstudiantes() {
                       {isEditing ? (
                         <select 
                           className="edit-input"
-                          value={editData.seccion} 
-                          onChange={ev => setEditData({...editData, seccion: ev.target.value})}
+                          value={editData.seccion_id || ''} 
+                          onChange={ev => {
+                            const sid = Number(ev.target.value);
+                            const sObj = secciones.find(s => s.id === sid);
+                            setEditData({
+                              ...editData, 
+                              seccion_id: sid || '', 
+                              seccion: sObj ? sObj.nombre : ''
+                            });
+                          }}
                         >
                           <option value="">-</option>
-                          {secciones.map(s => <option key={s.id} value={s.nombre}>{s.nombre}</option>)}
+                          {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                         </select>
                       ) : (
                         e.seccion ? <span className="badge-seccion">{e.seccion}</span> : <span className="badge-sin-asignar">Sin asignar</span>

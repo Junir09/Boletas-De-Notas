@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api';
+import '../assets/css/login.css';
 import { Eye, EyeOff } from 'lucide-react';
 
 function LoginAvanzado({ onSuccess }) {

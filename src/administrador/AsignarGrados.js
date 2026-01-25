@@ -89,7 +89,7 @@ function AsignarGrados() {
     if (!est) return;
 
     if (est.grado) {
-      const gradoObj = grados.find(g => parseNumero(g.nombre) === est.grado);
+      const gradoObj = grados.find(g => parseNumero(g.nombre) === parseNumero(est.grado));
       if (gradoObj) {
         setGradosOcultos(prev => {
           const s = new Set(prev);
@@ -130,7 +130,7 @@ function AsignarGrados() {
   const seleccionarTodosPorGrado = (numGrado) => {
     const n = Number(numGrado || 0);
     if (!n) return;
-    const dnis = estudiantes.filter(e => e.grado === n).map(e => e.dni);
+    const dnis = estudiantes.filter(e => parseNumero(e.grado) === n).map(e => e.dni);
     setSeleccionados(new Set(dnis));
   };
 
@@ -220,7 +220,7 @@ function AsignarGrados() {
 
   grados.forEach(g => {
     const n = parseNumero(g.nombre);
-    if (n) porGrado[n] = estudiantesFiltrados.filter(e => e.grado === n);
+    if (n) porGrado[n] = estudiantesFiltrados.filter(e => parseNumero(e.grado) === n);
   });
 
   return (

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/alumnos/alumnoshome.css';
 import { BookOpen, FileText, LogOut } from 'lucide-react';

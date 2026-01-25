@@ -10,6 +10,8 @@ function RegistrarEstudiantes() {
   const [modal, setModal] = useState({ visible: false, type: 'success', message: '' });
   const [dni, setDni] = useState('');
   const [apellidosNombres, setApellidosNombres] = useState('');
+  const [grado, setGrado] = useState('');
+  const [seccion, setSeccion] = useState('');
 
   const closeModal = () => setModal({ visible: false, type: 'success', message: '' });
 
@@ -41,9 +43,14 @@ function RegistrarEstudiantes() {
   const exportCSV = () => {
     const doExport = (list) => {
       const bom = '\ufeff'; // BOM para compatibilidad con Excel y UTF-8
-      const header = ['DNI','Apellidos y nombres'];
+      const header = ['DNI','Apellidos y nombres', 'Grado', 'Sección'];
       const lines = [header]
-        .concat(list.map(r => [r.dni, `${r.apellidos} ${r.nombres}`.trim()]))
+        .concat(list.map(r => [
+          r.dni, 
+          `${r.apellidos} ${r.nombres}`.trim(),
+          r.grado ? (String(r.grado).includes('°') ? r.grado : `${r.grado}°`) : '',
+          r.seccion || ''
+        ]))
         .map(cols => cols.map(csvEscape).join(','));
       const csv = bom + lines.join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -81,18 +88,62 @@ function RegistrarEstudiantes() {
         const wb = XLSX.read(data, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        const [, ...rowsData] = json; // skip header
+        
+        if (json.length === 0) return;
+
+        // Detectar cabeceras
+        const [headerRow, ...rowsData] = json;
+        const headers = (headerRow || []).map(h => String(h).toLowerCase().trim());
+        
+        const dniIdx = headers.findIndex(h => h.includes('dni'));
+        const anIdx = headers.findIndex(h => h.includes('apellidos y nombres'));
+        const aIdx = headers.indexOf('apellidos');
+        const nIdx = headers.indexOf('nombres');
+        const gIdx = headers.findIndex(h => h.includes('grado'));
+        const sIdx = headers.findIndex(h => h.includes('seccion') || h.includes('sección'));
+
         const parsed = rowsData.map(arr => {
-          const dni = String(arr[0] || '').trim();
-          if (arr.length >= 3) {
-            const apellidos = String(arr[1] || '').trim();
-            const nombres = String(arr[2] || '').trim();
-            return { dni, apellidos, nombres };
+          let dni, apellidos, nombres, grado, seccion;
+          
+          if (dniIdx !== -1) {
+             dni = String(arr[dniIdx] || '').trim();
+             if (anIdx !== -1) {
+                 const full = String(arr[anIdx] || '').trim();
+                 const parts = splitFullName(full);
+                 apellidos = parts.apellidos;
+                 nombres = parts.nombres;
+             } else {
+                 apellidos = String(arr[aIdx] || '').trim();
+                 nombres = String(arr[nIdx] || '').trim();
+             }
+             grado = gIdx !== -1 ? String(arr[gIdx] || '').trim() : '';
+             seccion = sIdx !== -1 ? String(arr[sIdx] || '').trim() : '';
+          } else {
+             // Fallback posicional
+             dni = String(arr[0] || '').trim();
+             if (arr.length >= 4) {
+                 // Asumimos DNI, FullName, Grado, Seccion
+                 const full = String(arr[1] || '').trim();
+                 const parts = splitFullName(full);
+                 apellidos = parts.apellidos;
+                 nombres = parts.nombres;
+                 grado = String(arr[2] || '').trim();
+                 seccion = String(arr[3] || '').trim();
+             } else if (arr.length === 3) {
+                 // DNI, Apellidos, Nombres (Legacy)
+                 apellidos = String(arr[1] || '').trim();
+                 nombres = String(arr[2] || '').trim();
+             } else {
+                 const full = String(arr[1] || '').trim();
+                 const parts = splitFullName(full);
+                 apellidos = parts.apellidos;
+                 nombres = parts.nombres;
+             }
           }
-          const full = String(arr[1] || '').trim();
-          const { apellidos, nombres } = splitFullName(full);
-          return { dni, apellidos, nombres };
+
+          return { dni, apellidos, nombres, grado, seccion };
         }).filter(x => x.dni && x.apellidos && x.nombres);
+        
         setRows(parsed);
         await saveToDb(parsed);
       } else {
@@ -139,14 +190,20 @@ function RegistrarEstudiantes() {
       const resp = await fetch(api('/api/estudiantes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dni: d, apellidos: a, nombres: n })
+        body: JSON.stringify({ 
+          dni: d, 
+          apellidos: a, 
+          nombres: n,
+          grado: grado.trim(),
+          seccion: seccion.trim()
+        })
       });
       const json = await resp.json();
       if (!resp.ok || !json.ok) {
         setError(json.error || 'Error al crear estudiante');
       } else {
         setModal({ visible: true, type: 'success', message: 'Estudiante creado' });
-        setDni(''); setApellidosNombres('');
+        setDni(''); setApellidosNombres(''); setGrado(''); setSeccion('');
         
       }
     } catch (e) {
@@ -157,14 +214,21 @@ function RegistrarEstudiantes() {
   const exportXLSX = async () => {
     try {
       const doExportXlsx = (list) => {
-        const header = [['DNI','Apellidos y nombres']];
-        const data = list.map(r => [r.dni, `${r.apellidos} ${r.nombres}`.trim()]);
+        const header = [['DNI','Apellidos y nombres', 'Grado', 'Sección']];
+        const data = list.map(r => [
+          r.dni, 
+          `${r.apellidos} ${r.nombres}`.trim(),
+          r.grado ? (String(r.grado).includes('°') ? r.grado : `${r.grado}°`) : '',
+          r.seccion || ''
+        ]);
         const ws = XLSX.utils.aoa_to_sheet([...header, ...data]);
         const maxDni = Math.max('DNI'.length, ...data.map(r => String(r[0]).length));
         const maxFull = Math.max('Apellidos y nombres'.length, ...data.map(r => String(r[1]).length));
         ws['!cols'] = [
           { wch: Math.max(8, maxDni) },
-          { wch: Math.min(60, Math.max(15, maxFull)) }
+          { wch: Math.min(60, Math.max(15, maxFull)) },
+          { wch: 8 },
+          { wch: 8 }
         ];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Estudiantes');
@@ -184,7 +248,7 @@ function RegistrarEstudiantes() {
     } catch (err) {
       console.error(err);
       try {
-        const header = [['DNI','Apellidos y nombres']];
+        const header = [['DNI','Apellidos y nombres', 'Grado', 'Sección']];
         const ws = XLSX.utils.aoa_to_sheet(header);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Estudiantes');
@@ -205,22 +269,47 @@ function RegistrarEstudiantes() {
     const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
     const header = parseCsvLine(lines[0], sep);
     const lower = header.map(h => h.toLowerCase());
-    const dniIdx = lower.indexOf('dni');
-    const anIdx = lower.indexOf('apellidos y nombres');
+    const dniIdx = lower.findIndex(h => h.includes('dni'));
+    const anIdx = lower.findIndex(h => h.includes('apellidos y nombres'));
     const aIdx = lower.indexOf('apellidos');
     const nIdx = lower.indexOf('nombres');
+    const gIdx = lower.findIndex(h => h.includes('grado'));
+    const sIdx = lower.findIndex(h => h.includes('seccion') || h.includes('sección'));
+
     const hasApellidosNombres = anIdx !== -1;
     return lines.slice(1).map(line => {
       const cols = parseCsvLine(line, sep);
-      const dni = (cols[dniIdx] || '').trim();
+      
+      const dni = (dniIdx !== -1 ? cols[dniIdx] : cols[0]) || '';
+      let apellidos = '', nombres = '';
+      let grado = '', seccion = '';
+
       if (hasApellidosNombres) {
         const full = (cols[anIdx] || '').trim();
-        const { apellidos, nombres } = splitFullName(full);
-        return { dni, apellidos, nombres };
+        const { apellidos: a, nombres: n } = splitFullName(full);
+        apellidos = a; nombres = n;
+      } else if (aIdx !== -1 && nIdx !== -1) {
+        apellidos = (cols[aIdx] || '').trim();
+        nombres = (cols[nIdx] || '').trim();
+      } else {
+        // Fallback positional
+        if (cols.length >= 4) {
+           const full = (cols[1] || '').trim();
+           const parts = splitFullName(full);
+           apellidos = parts.apellidos;
+           nombres = parts.nombres;
+        } else {
+           apellidos = (cols[1] || '').trim();
+           nombres = (cols[2] || '').trim();
+        }
       }
-      const apellidos = (cols[aIdx] || '').trim();
-      const nombres = (cols[nIdx] || '').trim();
-      return { dni, apellidos, nombres };
+      
+      grado = gIdx !== -1 ? (cols[gIdx] || '').trim() : 
+              (cols.length >= 4 ? (cols[2] || '').trim() : '');
+      seccion = sIdx !== -1 ? (cols[sIdx] || '').trim() : 
+              (cols.length >= 4 ? (cols[3] || '').trim() : '');
+
+      return { dni: dni.trim(), apellidos, nombres, grado, seccion };
     }).filter(x => x.dni && x.apellidos && x.nombres);
   };
 
@@ -276,7 +365,7 @@ function RegistrarEstudiantes() {
               type="text" 
               value={dni} 
               onChange={e => setDni(e.target.value)} 
-              placeholder="DNI" 
+              placeholder="Documento De Identidad" 
               inputMode="numeric" 
               maxLength={8} 
             />
@@ -287,8 +376,28 @@ function RegistrarEstudiantes() {
             <input 
               type="text" 
               value={apellidosNombres} 
-              onChange={e => setApellidosNombres(e.target.value)} 
-              placeholder="Apellidos y nombres" 
+              onChange={(e) => setApellidosNombres(e.target.value)} 
+              placeholder="Nombre completo"
+            />
+          </div>
+
+          <div className="field">
+            <label>Grado (Opcional)</label>
+            <input 
+              type="text" 
+              value={grado} 
+              onChange={(e) => setGrado(e.target.value)} 
+              placeholder="1°"
+            />
+          </div>
+
+          <div className="field">
+            <label>Sección (Opcional)</label>
+            <input 
+              type="text" 
+              value={seccion} 
+              onChange={(e) => setSeccion(e.target.value)} 
+              placeholder="A"
             />
           </div>
 

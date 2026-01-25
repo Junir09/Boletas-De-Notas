@@ -8,7 +8,6 @@ import ListaDocentes from './ListaDocentes';
 import ConfiguracionSistema from './ConfiguracionSistema';
 import Cursos from './Cursos';
 import AsignarGrados from './AsignarGrados';
-import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/admin/inicio.css';
 function AdminHome() {

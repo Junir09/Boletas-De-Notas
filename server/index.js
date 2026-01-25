@@ -23,6 +23,9 @@ async function ensureSchema() {
     await pool.query(
       'CREATE TABLE IF NOT EXISTS curso_grado (id INT UNSIGNED NOT NULL AUTO_INCREMENT, curso_id INT UNSIGNED NOT NULL, grado_id INT UNSIGNED NOT NULL, seccion_id INT UNSIGNED NULL, PRIMARY KEY (id), UNIQUE KEY uniq_curso_grado_seccion (curso_id, grado_id, seccion_id), KEY idx_curso_grado_curso (curso_id), KEY idx_curso_grado_grado (grado_id), KEY idx_curso_grado_seccion (seccion_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS promedio_detalle (id INT UNSIGNED NOT NULL AUTO_INCREMENT, promedio_id INT UNSIGNED NOT NULL, actividad_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_promedio_detalle (promedio_id, actividad_id), KEY idx_promedio_detalle_promedio (promedio_id), KEY idx_promedio_detalle_actividad (actividad_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
   } catch (e) {
     console.error('Schema error:', e.message);
   }
@@ -197,6 +200,43 @@ app.get('/api/docentes/:dni/cursos/asignaciones', async (req, res) => {
   }
 });
 
+
+app.get('/api/promedio-detalle', async (req, res) => {
+  const cursoId = Number(req.query.curso_id || 0);
+  const gradoId = Number(req.query.grado_id || 0);
+  const seccionId = req.query.seccion_id ? Number(req.query.seccion_id) : null;
+  if (!cursoId || !gradoId) return res.status(400).json({ ok: false, error: 'Falta curso_id o grado_id' });
+  try {
+    let sql = `
+      SELECT pd.promedio_id, pd.actividad_id
+      FROM promedio_detalle pd
+      JOIN curso_actividad ca ON ca.id = pd.promedio_id
+      WHERE ca.curso_id = ? AND ca.grado_id = ?
+    `;
+    const params = [cursoId, gradoId];
+    if (seccionId) { sql += ' AND ca.seccion_id = ?'; params.push(seccionId); }
+    else { sql += ' AND ca.seccion_id IS NULL'; }
+    const [rows] = await pool.query(sql, params);
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/promedio-detalle', async (req, res) => {
+  const { promedio_id, actividades_ids } = req.body;
+  if (!promedio_id || !Array.isArray(actividades_ids)) return res.status(400).json({ ok: false, error: 'Datos inválidos' });
+  try {
+    const values = actividades_ids.map(aid => [promedio_id, aid]);
+    if (values.length > 0) {
+      await pool.query('INSERT IGNORE INTO promedio_detalle (promedio_id, actividad_id) VALUES ?', [values]);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // Estudiantes por curso asignado al docente
 app.get('/api/docentes/:dni/cursos/:cursoId/estudiantes', async (req, res) => {
   const dni = String(req.params.dni || '').trim();
@@ -282,6 +322,7 @@ app.delete('/api/curso-actividades/:id', async (req, res) => {
   if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
   try {
     await pool.query('DELETE FROM actividad_nota WHERE actividad_id = ?', [id]);
+    await pool.query('DELETE FROM promedio_detalle WHERE promedio_id = ? OR actividad_id = ?', [id, id]);
     const [del] = await pool.query('DELETE FROM curso_actividad WHERE id = ?', [id]);
     if (del.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Actividad no existe' });
     res.json({ ok: true });
@@ -446,7 +487,9 @@ app.post('/api/docentes', async (req, res) => {
   if (!dni || !nombre) {
     return res.status(400).json({ ok: false, error: 'Faltan dni y nombre' });
   }
-  const password = String(dni).slice(-6) || Math.random().toString(36).slice(2, 8);
+  // Generar contraseña: Primer nombre (primera palabra) + 2 primeros dígitos del DNI
+  const primerNombre = nombre.trim().split(' ')[0];
+  const password = (primerNombre + String(dni).substring(0, 2)) || String(dni).slice(-6);
   try {
     const [result] = await pool.query('INSERT INTO docente (dni, nombre, descripcion, password) VALUES (?, ?, ?, ?)', [dni, nombre, descripcion || null, password]);
     res.json({ ok: true, id: result.insertId, password });
@@ -508,7 +551,16 @@ app.get('/api/cursos', async (req, res) => {
 // Estudiantes
 app.get('/api/estudiantes', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT dni, apellidos, nombres, grado, seccion FROM estudiantes ORDER BY apellidos, nombres');
+    const [rows] = await pool.query(`
+      SELECT e.dni, e.apellidos, e.nombres, 
+             COALESCE(g.nombre, CAST(e.grado AS CHAR)) as grado, 
+             COALESCE(s.nombre, e.seccion) as seccion,
+             e.grado_id, e.seccion_id
+      FROM estudiantes e
+      LEFT JOIN grados g ON g.id = e.grado_id
+      LEFT JOIN secciones s ON s.id = e.seccion_id
+      ORDER BY e.apellidos, e.nombres
+    `);
     res.json({ ok: true, data: rows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -517,13 +569,72 @@ app.get('/api/estudiantes', async (req, res) => {
 
 // Crear estudiante (individual)
 app.post('/api/estudiantes', async (req, res) => {
-  const { dni, apellidos, nombres } = req.body || {};
+  const { dni, apellidos, nombres, grado, seccion } = req.body || {};
   const d = String(dni || '').trim();
   const a = String(apellidos || '').trim();
   const n = String(nombres || '').trim();
+  
   if (!d || !a || !n) return res.status(400).json({ ok: false, error: 'Faltan dni, apellidos y nombres' });
+
+  // Helpers (replicados de bulk para consistencia)
+  const normalizeGrado = (g) => {
+       if (!g) return null;
+       const s = String(g).trim();
+       if (/^\d+$/.test(s)) return `${s}°`; 
+       return s;
+  };
+  const normalizeSeccion = (s) => (s ? String(s).trim().toUpperCase() : null);
+
+  const getOrCreateId = async (table, name) => {
+      if (!name) return null;
+      // Buscar
+      let query = `SELECT id, nombre FROM ${table} WHERE nombre = ?`;
+      let params = [name];
+      if (table === 'grados') {
+        const clean = name.replace('°', '');
+        const withDegree = `${clean}°`;
+        query = `SELECT id, nombre FROM ${table} WHERE nombre = ? OR nombre = ? ORDER BY LENGTH(nombre) DESC LIMIT 1`;
+        params = [clean, withDegree];
+      } else {
+        query += ' LIMIT 1';
+      }
+      const [rows] = await pool.query(query, params);
+      if (rows.length > 0) return rows[0].id;
+      
+      // Crear
+      try {
+        const [res] = await pool.query(`INSERT INTO ${table} (nombre) VALUES (?)`, [name]);
+        return res.insertId;
+      } catch (e) {
+        if (e.code === 'ER_DUP_ENTRY') {
+           const [rowsRetry] = await pool.query(`SELECT id FROM ${table} WHERE nombre = ? LIMIT 1`, [name]);
+           if (rowsRetry.length > 0) return rowsRetry[0].id;
+        }
+        throw e;
+      }
+  };
+
   try {
-    const [result] = await pool.query('INSERT INTO estudiantes (dni, apellidos, nombres) VALUES (?, ?, ?)', [d, a, n]);
+    const normGrado = normalizeGrado(grado);
+    const normSeccion = normalizeSeccion(seccion);
+
+    let gradoId = null;
+    let seccionId = null;
+
+    if (normGrado) gradoId = await getOrCreateId('grados', normGrado);
+    if (normSeccion) seccionId = await getOrCreateId('secciones', normSeccion);
+
+    let legacyGrado = null;
+    if (normGrado) {
+       const match = String(normGrado).match(/(\d+)/);
+       if (match) legacyGrado = parseInt(match[1], 10);
+    }
+    const legacySeccion = normSeccion || null;
+
+    const [result] = await pool.query(
+      'INSERT INTO estudiantes (dni, apellidos, nombres, grado_id, seccion_id, grado, seccion) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+      [d, a, n, gradoId, seccionId, legacyGrado, legacySeccion]
+    );
     res.json({ ok: true, id: result.insertId });
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
@@ -539,19 +650,147 @@ app.post('/api/estudiantes/bulk', async (req, res) => {
   if (!Array.isArray(estudiantes)) {
     return res.status(400).json({ ok: false, error: 'Formato inválido: se esperaba { estudiantes: [...] }' });
   }
-  const values = estudiantes
-    .map(s => [String(s.dni || '').trim(), String(s.apellidos || '').trim(), String(s.nombres || '').trim()])
-    .filter(v => v[0] && v[1] && v[2]);
-  if (values.length === 0) {
+
+  // 1. Filtrar estudiantes válidos
+  const validStudents = estudiantes.filter(s => s.dni && s.apellidos && s.nombres);
+  if (validStudents.length === 0) {
     return res.status(400).json({ ok: false, error: 'No hay estudiantes válidos para insertar' });
   }
-  const sql = 'INSERT INTO estudiantes (dni, apellidos, nombres) VALUES ? ON DUPLICATE KEY UPDATE apellidos=VALUES(apellidos), nombres=VALUES(nombres)';
+
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query(sql, [values]);
-    const affected = result.affectedRows;
-    res.json({ ok: true, count: values.length, affected });
+    await connection.beginTransaction();
+
+    // 2. Procesar Grados y Secciones (Crear si no existen)
+    const gradoMap = new Map(); // Nombre -> ID
+    const seccionMap = new Map(); // Nombre -> ID
+
+    // Helper para normalizar nombre de grado
+    const normalizeGrado = (g) => {
+       if (!g) return null;
+       const s = String(g).trim();
+       // Si es solo número, agregar símbolo de grado
+       if (/^\d+$/.test(s)) return `${s}°`; 
+       return s;
+    };
+
+    const normalizeSeccion = (s) => {
+        if (!s) return null;
+        return String(s).trim().toUpperCase();
+    };
+
+    // Helper para obtener o crear ID
+    const getOrCreateId = async (table, name, map) => {
+      if (!name) return null;
+      if (map.has(name)) return map.get(name);
+
+      console.log(`[Bulk] Buscando/Creando ${table}: "${name}"`);
+
+      // Buscar por nombre exacto
+      let query = `SELECT id, nombre FROM ${table} WHERE nombre = ?`;
+      let params = [name];
+
+      // Lógica especial para grados: buscar "1" y "1°" como equivalentes
+      if (table === 'grados') {
+        const clean = name.replace('°', '');
+        const withDegree = `${clean}°`;
+        query = `SELECT id, nombre FROM ${table} WHERE nombre = ? OR nombre = ? ORDER BY LENGTH(nombre) DESC LIMIT 1`;
+        params = [clean, withDegree];
+      } else {
+        query += ' LIMIT 1';
+      }
+
+      const [rows] = await connection.query(query, params);
+      
+      if (rows.length > 0) {
+        console.log(`[Bulk] Encontrado ${table}: "${rows[0].nombre}" (buscado: "${name}") -> ID ${rows[0].id}`);
+        map.set(name, rows[0].id); // Mapeamos el nombre buscado al ID encontrado
+        return rows[0].id;
+      }
+
+      // Crear si no existe
+      try {
+        console.log(`[Bulk] Creando nuevo ${table}: "${name}"`);
+        const [res] = await connection.query(`INSERT INTO ${table} (nombre) VALUES (?)`, [name]);
+        map.set(name, res.insertId);
+        return res.insertId;
+      } catch (e) {
+        // Manejar condición de carrera si otro proceso lo insertó
+        if (e.code === 'ER_DUP_ENTRY') {
+           const [rowsRetry] = await connection.query(`SELECT id FROM ${table} WHERE nombre = ? LIMIT 1`, [name]);
+           if (rowsRetry.length > 0) {
+             map.set(name, rowsRetry[0].id);
+             return rowsRetry[0].id;
+           }
+        }
+        throw e;
+      }
+    };
+
+    // Pre-procesar todos los estudiantes para llenar los mapas
+    // Usamos un Set para iterar solo valores únicos primero
+    const uniqueGrados = new Set();
+    const uniqueSecciones = new Set();
+
+    validStudents.forEach(s => {
+        const g = normalizeGrado(s.grado);
+        const sec = normalizeSeccion(s.seccion);
+        if (g) uniqueGrados.add(g);
+        if (sec) uniqueSecciones.add(sec);
+    });
+
+    for (const g of uniqueGrados) await getOrCreateId('grados', g, gradoMap);
+    for (const s of uniqueSecciones) await getOrCreateId('secciones', s, seccionMap);
+
+    // 3. Preparar Bulk Insert
+    const values = validStudents.map(s => {
+      const normGrado = normalizeGrado(s.grado);
+      const normSeccion = normalizeSeccion(s.seccion);
+
+      const gradoId = normGrado ? gradoMap.get(normGrado) : null;
+      const seccionId = normSeccion ? seccionMap.get(normSeccion) : null;
+      
+      // Intentar derivar valores legacy (solo numérico para grado)
+      let legacyGrado = null;
+      if (normGrado) {
+          const match = String(normGrado).match(/(\d+)/);
+          if (match) legacyGrado = parseInt(match[1], 10);
+      }
+      const legacySeccion = normSeccion || null;
+
+      return [
+        String(s.dni).trim(),
+        String(s.apellidos).trim(),
+        String(s.nombres).trim(),
+        gradoId,
+        seccionId,
+        legacyGrado,
+        legacySeccion
+      ];
+    });
+
+    const sql = `
+      INSERT INTO estudiantes (dni, apellidos, nombres, grado_id, seccion_id, grado, seccion) 
+      VALUES ? 
+      ON DUPLICATE KEY UPDATE 
+        apellidos=VALUES(apellidos), 
+        nombres=VALUES(nombres),
+        grado_id=COALESCE(VALUES(grado_id), grado_id),
+        seccion_id=COALESCE(VALUES(seccion_id), seccion_id),
+        grado=COALESCE(VALUES(grado), grado),
+        seccion=COALESCE(VALUES(seccion), seccion)
+    `;
+
+    await connection.query(sql, [values]);
+
+    await connection.commit();
+    res.json({ ok: true, count: values.length });
+
   } catch (e) {
+    await connection.rollback();
     res.status(500).json({ ok: false, error: e.message });
+  } finally {
+    connection.release();
   }
 });
 
@@ -567,20 +806,63 @@ app.get('/api/estudiantes/sin-grado', async (req, res) => {
 
 // Asignación masiva de grado y sección
 app.post('/api/estudiantes/grados/bulk', async (req, res) => {
-  const { grado, seccion, dnis } = req.body || {};
-  const g = Number(grado);
-  const sec = seccion ? String(seccion).trim() : null;
+  const { grado, seccion, dnis, grado_id, seccion_id } = req.body || {};
+  // Si envían ID, usamos eso. Si envían texto/número legacy, intentamos resolver.
+  
   const list = Array.isArray(dnis) ? dnis.map(d => String(d || '').trim()).filter(Boolean) : [];
-  if (!g || g < 1 || g > 6) return res.status(400).json({ ok: false, error: 'Grado inválido' });
   if (list.length === 0) return res.status(400).json({ ok: false, error: 'Lista de DNI vacía' });
-  const placeholders = list.map(() => '?').join(',');
+
   try {
-    const fields = ['grado = ?'];
-    const params = [g];
-    if (sec) {
-      fields.push('seccion = ?');
-      params.push(sec);
+    const fields = [];
+    const params = [];
+
+    // Resolver Grado
+    if (grado_id) {
+        fields.push('grado_id = ?'); params.push(grado_id);
+        const [gRows] = await pool.query('SELECT nombre FROM grados WHERE id = ?', [grado_id]);
+        if (gRows.length > 0) {
+            const gNum = parseInt(gRows[0].nombre);
+            fields.push('grado = ?'); params.push(isNaN(gNum) ? null : gNum);
+        }
+    } else if (grado) {
+        // Legacy support
+        const gNum = Number(grado);
+        // Si es 1-6, asumimos legacy directo si no hay ID
+        if (!isNaN(gNum) && gNum >= 1 && gNum <= 6) {
+            fields.push('grado = ?'); params.push(gNum);
+            // Intentar buscar ID
+            const [gRows] = await pool.query('SELECT id FROM grados WHERE nombre = ? OR nombre = ? LIMIT 1', [gNum + '°', String(gNum)]);
+            if (gRows.length > 0) {
+                fields.push('grado_id = ?'); params.push(gRows[0].id);
+            } else {
+                fields.push('grado_id = NULL');
+            }
+        } else {
+             return res.status(400).json({ ok: false, error: 'Grado inválido (use ID para grados personalizados)' });
+        }
     }
+
+    // Resolver Sección
+    if (seccion_id) {
+        fields.push('seccion_id = ?'); params.push(seccion_id);
+        const [sRows] = await pool.query('SELECT nombre FROM secciones WHERE id = ?', [seccion_id]);
+        if (sRows.length > 0) {
+            fields.push('seccion = ?'); params.push(sRows[0].nombre);
+        }
+    } else if (seccion) {
+        const secName = String(seccion).trim();
+        fields.push('seccion = ?'); params.push(secName);
+        const [sRows] = await pool.query('SELECT id FROM secciones WHERE nombre = ? LIMIT 1', [secName]);
+        if (sRows.length > 0) {
+            fields.push('seccion_id = ?'); params.push(sRows[0].id);
+        } else {
+            fields.push('seccion_id = NULL');
+        }
+    }
+
+    if (fields.length === 0) return res.status(400).json({ ok: false, error: 'Nada que actualizar' });
+
+    const placeholders = list.map(() => '?').join(',');
     const sql2 = `UPDATE estudiantes SET ${fields.join(', ')} WHERE dni IN (${placeholders})`;
     const [result] = await pool.query(sql2, [...params, ...list]);
     res.json({ ok: true, affected: result.affectedRows });
@@ -592,24 +874,129 @@ app.post('/api/estudiantes/grados/bulk', async (req, res) => {
 // Actualizar estudiante
 app.put('/api/estudiantes/:dni', async (req, res) => {
   const dni = String(req.params.dni || '').trim();
-  const { apellidos, nombres, grado, seccion } = req.body || {};
+  const { apellidos, nombres, grado, seccion, grado_id, seccion_id } = req.body || {};
   if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
   try {
-    const [rows] = await pool.query('SELECT dni FROM estudiantes WHERE dni = ? LIMIT 1', [dni]);
+    const [rows] = await pool.query(`
+      SELECT e.dni, e.grado_id, e.seccion_id, e.grado, e.seccion,
+             g.nombre as grado_nombre
+      FROM estudiantes e
+      LEFT JOIN grados g ON g.id = e.grado_id
+      WHERE e.dni = ? LIMIT 1
+    `, [dni]);
     if (rows.length === 0) return res.status(404).json({ ok: false, error: 'Estudiante no existe' });
+    const current = rows[0];
+    
     const fields = [];
     const params = [];
+    
     if (typeof apellidos === 'string' && apellidos.trim()) { fields.push('apellidos = ?'); params.push(apellidos.trim()); }
     if (typeof nombres === 'string' && nombres.trim()) { fields.push('nombres = ?'); params.push(nombres.trim()); }
-    if (grado === null) { fields.push('grado = NULL'); }
-    else if (typeof grado !== 'undefined') {
-      const g = Number(grado);
-      if (!Number.isNaN(g) && g >= 1 && g <= 6) { fields.push('grado = ?'); params.push(g); } else {
-        return res.status(400).json({ ok: false, error: 'Grado inválido' });
-      }
+    
+    // Lógica para Grado
+    let skipGrado = false;
+    const currentGradoId = current.grado_id || null;
+    const newGradoId = grado_id || null;
+    
+    // Construir valor de visualización actual tal como lo hace el GET
+    const currentGradoDisplay = current.grado_nombre || (current.grado ? String(current.grado) : '');
+    const newGradoDisplay = grado !== undefined && grado !== null ? String(grado) : '';
+
+    // Si IDs son iguales (y definidos) O (IDs son nulos Y textos coinciden)
+    // Nota: Comparar newGradoDisplay con currentGradoDisplay cubre el caso de legacy "7" vs "7"
+    if (grado !== undefined) {
+        if (currentGradoId && newGradoId && currentGradoId === newGradoId) {
+            skipGrado = true;
+        } else if (!currentGradoId && !newGradoId && newGradoDisplay == currentGradoDisplay) {
+            skipGrado = true;
+        }
     }
-    if (seccion === null) { fields.push('seccion = NULL'); }
-    else if (typeof seccion === 'string') { fields.push('seccion = ?'); params.push(seccion.trim() || null); }
+
+    if (!skipGrado) {
+        if (grado_id) {
+          // Si envían ID explícito
+          fields.push('grado_id = ?'); params.push(grado_id);
+          // Buscar el nombre para mantener consistencia legacy
+          const [gRows] = await pool.query('SELECT nombre FROM grados WHERE id = ?', [grado_id]);
+          if (gRows.length > 0) {
+            const gName = gRows[0].nombre;
+            const gNum = parseInt(gName);
+            fields.push('grado = ?'); params.push(isNaN(gNum) ? null : gNum);
+          }
+        } else if (grado !== undefined) {
+          // Fallback legacy o si limpian el grado
+          if (grado === null || grado === '') {
+            fields.push('grado = NULL');
+            fields.push('grado_id = NULL');
+          } else {
+            // Intentar resolver ID desde el valor (puede ser número o string "1°")
+            // Primero buscar en grados por nombre
+            let gName = String(grado).trim();
+            // Normalizar "1" a "1°" para búsqueda
+            if (/^\d+$/.test(gName)) gName += '°';
+            
+            const [gRows] = await pool.query('SELECT id, nombre FROM grados WHERE nombre = ? OR nombre = ? LIMIT 1', [gName, String(grado).trim()]);
+            
+            if (gRows.length > 0) {
+              fields.push('grado_id = ?'); params.push(gRows[0].id);
+              const gNum = parseInt(gRows[0].nombre);
+              fields.push('grado = ?'); params.push(isNaN(gNum) ? null : gNum);
+            } else {
+                // Si no existe el grado, permitirlo legacy si es 1-6, sino error o null
+                const gNum = Number(grado);
+                if (!isNaN(gNum) && gNum >= 1 && gNum <= 6) {
+                    fields.push('grado = ?'); params.push(gNum);
+                    fields.push('grado_id = NULL'); // No tiene ID asociado
+                } else {
+                    // Rechazar si no coincide con el actual (que ya validamos con skipGrado)
+                    return res.status(400).json({ ok: false, error: 'Grado inválido o no registrado' });
+                }
+            }
+          }
+        }
+    }
+
+    // Lógica para Sección
+    let skipSeccion = false;
+    const currentSeccionId = current.seccion_id || null;
+    const newSeccionId = seccion_id || null;
+    const currentSeccionDisplay = current.seccion || '';
+    const newSeccionDisplay = seccion !== undefined && seccion !== null ? String(seccion) : '';
+
+    if (seccion !== undefined) {
+        if (currentSeccionId && newSeccionId && currentSeccionId === newSeccionId) {
+            skipSeccion = true;
+        } else if (!currentSeccionId && !newSeccionId && newSeccionDisplay == currentSeccionDisplay) {
+            skipSeccion = true;
+        }
+    }
+
+    if (!skipSeccion) {
+        if (seccion_id) {
+          fields.push('seccion_id = ?'); params.push(seccion_id);
+          const [sRows] = await pool.query('SELECT nombre FROM secciones WHERE id = ?', [seccion_id]);
+          if (sRows.length > 0) {
+            fields.push('seccion = ?'); params.push(sRows[0].nombre);
+          }
+        } else if (seccion !== undefined) {
+          if (seccion === null || seccion === '') {
+            fields.push('seccion = NULL');
+            fields.push('seccion_id = NULL');
+          } else {
+            const sName = String(seccion).trim().toUpperCase();
+            const [sRows] = await pool.query('SELECT id FROM secciones WHERE nombre = ? LIMIT 1', [sName]);
+            if (sRows.length > 0) {
+                fields.push('seccion_id = ?'); params.push(sRows[0].id);
+                fields.push('seccion = ?'); params.push(sName);
+            } else {
+                // Permitir guardar texto legacy, pero sin ID
+                fields.push('seccion = ?'); params.push(sName);
+                fields.push('seccion_id = NULL');
+            }
+          }
+        }
+    }
+
     if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
     params.push(dni);
     const [result] = await pool.query(`UPDATE estudiantes SET ${fields.join(', ')} WHERE dni = ?`, params);
@@ -780,6 +1167,9 @@ app.delete('/api/grados/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
   try {
+    // 1. Desasignar estudiantes
+    await pool.query('UPDATE estudiantes SET grado_id = NULL, grado = NULL WHERE grado_id = ?', [id]);
+    // 2. Eliminar grado
     const [result] = await pool.query('DELETE FROM grados WHERE id = ?', [id]);
     if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Grado no existe' });
     res.json({ ok: true });
@@ -836,6 +1226,9 @@ app.delete('/api/secciones/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ ok: false, error: 'Falta id' });
   try {
+    // 1. Desasignar estudiantes
+    await pool.query('UPDATE estudiantes SET seccion_id = NULL, seccion = NULL WHERE seccion_id = ?', [id]);
+    // 2. Eliminar sección
     const [result] = await pool.query('DELETE FROM secciones WHERE id = ?', [id]);
     if (result.affectedRows === 0) return res.status(404).json({ ok: false, error: 'Sección no existe' });
     res.json({ ok: true });

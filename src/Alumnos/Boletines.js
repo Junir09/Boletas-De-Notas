@@ -89,7 +89,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
   const exportPDF = async () => {
     if (!alumno || !cursoSel || actividades.length === 0) return;
     const cursoNom = (cursos.find(c => c.id === cursoSel)?.nombre) || '';
-    const title = `Boletín ${cursoNom} - ${alumno.apellidos} ${alumno.nombres}${alumno.grado ? ` - ${alumno.grado}°${alumno.seccion ? ` ${alumno.seccion}` : ''}` : ''}`;
+    const title = `Boletín ${cursoNom} - ${alumno.apellidos} ${alumno.nombres}${alumno.grado ? ` - ${String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°'}${alumno.seccion ? ` ${alumno.seccion}` : ''}` : ''}`;
     const headCols = ['Actividad','Nota'];
     const bodyRows = actividades.map(a => {
       const v = (notas[a.id] && notas[a.id][alumno.dni]) !== undefined ? notas[a.id][alumno.dni] : '';
@@ -157,7 +157,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text('AÑO ESCOLAR:', 50, 237);
       doc.setFontSize(12);
       doc.text(`${alumno.apellidos} ${alumno.nombres}`, 160, 147);
-      doc.text(`${alumno.grado ? alumno.grado + '°' : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
+      doc.text(`${alumno.grado ? (String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°') : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
       doc.text(docentes || '(no asignado)', 160, 207);
       doc.text(anio, 160, 237);
       doc.setDrawColor(104, 126, 122);
@@ -220,7 +220,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text('AÑO ESCOLAR:', 50, 237);
       doc.setFontSize(12);
       doc.text(`${alumno.apellidos} ${alumno.nombres}`, 160, 147);
-      doc.text(`${alumno.grado ? alumno.grado + '°' : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
+      doc.text(`${alumno.grado ? (String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°') : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
       doc.text(docentes || '(no asignado)', 160, 207);
       doc.text(anio, 160, 237);
       doc.setDrawColor(104, 126, 122);
@@ -278,7 +278,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
         doc.text('AÑO ESCOLAR:', 50, 237);
         doc.setFontSize(12);
         doc.text(`${alumno.apellidos} ${alumno.nombres}`, 160, 147);
-        doc.text(`${alumno.grado ? alumno.grado + '°' : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
+        doc.text(`${alumno.grado ? (String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°') : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
         doc.text(docentes || '(no asignado)', 160, 207);
         doc.text(anio, 160, 237);
         doc.setDrawColor(104, 126, 122);
@@ -351,7 +351,7 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
   };
 
   return (
-    <div>
+    <div className="boletas-panel">
       <h1>Boletas</h1>
       <div className="inline-actions" style={{ marginBottom: 12 }}>
         <label>Curso</label>

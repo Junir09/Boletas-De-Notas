@@ -48,7 +48,7 @@
 
 /* Forzar desbordamiento real */
 .estudiantes-table table {
-  width: max-content !important;   /* ✔ NECESARIO PARA CARRUSEL */
+  width: 100% !important;
   min-width: 100%;
   border-collapse: collapse;
 }
@@ -127,27 +127,18 @@
 }
 
 /* ---------- SLIDER ---------- */
-.scroll-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-card-bg);
-}
-
-.scroll-controls .scroll-slider {
-  flex: 1;
-}
+/* Eliminado */
 
 /* ---------- INPUT NOTA ---------- */
 .nota-input {
-  width: 120px;
+  width: 80px; /* Reducido para mejor estética */
+  text-align: center; /* Centrado */
   max-width: 100%;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 8px 6px;
+  border-radius: 8px;
   border: 1px solid var(--color-border);
   font-size: 0.95rem;
+  font-weight: 500;
   color: var(--color-text);
   background: var(--color-card-bg);
   transition: border 0.2s, box-shadow 0.2s;
@@ -163,4 +154,245 @@
   background: var(--color-fondo-alt);
   color: var(--color-text-muted);
   cursor: not-allowed;
+}
+/* =====================================================
+   MEJORAS VISUALES – BOLETAS (SIN ESTILOS GENERALES)
+   ===================================================== */
+
+/* ---------- SELECT ACTIVIDADES ---------- */
+.notas-form select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.notas-form select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- BOTONES DE SCROLL (ELIMINADOS) ---------- */
+/* .scroll-controls button eliminados */
+
+/* ---------- SLIDER HORIZONTAL (ELIMINADO) ---------- */
+/* estilos eliminados */
+
+/* ---------- FILA "SIN ALUMNOS" ---------- */
+.estudiantes-table tbody tr td[colspan] {
+  text-align: center;
+  padding: 32px 20px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  background: var(--color-fondo-alt);
+}
+
+/* ---------- HEADER DE TABLA (MEJOR JERARQUÍA) ---------- */
+.estudiantes-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+/* ---------- INPUT NOTA – ESTADO PROMEDIO ---------- */
+.nota-input:disabled {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-fondo-alt),
+    var(--color-fondo-alt) 10px,
+    #f8fafc 10px,
+    #f8fafc 20px
+  );
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* ---------- MODAL – INPUT TEXTO ---------- */
+.modal-body input[type="text"] {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 320px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.modal-body input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- CHECKBOXES PROMEDIO ---------- */
+.activities-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-fondo-alt);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.activity-item:hover {
+  background: #e2e8f0;
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.activity-item input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.activity-item span {
+  font-weight: 500;
+}
+
+/* ---------- LABELS GENERICOS (OLD) ---------- */
+.modal-body label:not(.activity-item) {
+  /* Mantener estilos solo para otros labels si existen */
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--color-text-label);
+}
+
+/* ---------- BOTONES MODAL ---------- */
+.modal-body button {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+
+.modal-body button:hover {
+  background: var(--color-hover);
+  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+}
+
+/* ---------- MICRO-ANIMACIÓN INPUT NOTA ---------- */
+.nota-input {
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+
+.nota-input:focus {
+  transform: scale(1.03);
+}
+
+/* ---------- MODAL OVERLAY ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalFade 0.25s ease;
+}
+
+/* ---------- MODAL CARD ---------- */
+.modal-card {
+  background: var(--color-card-bg);
+  border-radius: 18px;
+  width: min(500px, 96vw); /* Ancho más pequeño para alertas */
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+  animation: modalUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card.wide {
+  width: min(900px, 96vw); /* Ancho normal para contenido grande */
+}
+
+/* ---------- MODAL HEADER ---------- */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(
+    180deg,
+    var(--color-fondo-alt),
+    var(--color-card-bg)
+  );
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-principal);
+}
+
+.modal-header .close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-border);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-header .close:hover {
+  background: var(--color-danger);
+  color: var(--color-white);
+  border-color: var(--color-danger);
+  transform: scale(1.05);
+}
+
+/* ---------- MODAL BODY ---------- */
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ---------- ANIMACIONES ---------- */
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

@@ -12,8 +12,6 @@ export default function Reportes() {
   const [actividades, setActividades] = useState([]);
   const [notas, setNotas] = useState({});
   const [loading, setLoading] = useState(false);
-  const [dniAlumno, setDniAlumno] = useState('');
-  const [soloAlumno, setSoloAlumno] = useState(false);
 
   useEffect(() => {
     cargarBase();
@@ -51,8 +49,7 @@ export default function Reportes() {
       const rA = await fetch(api(`/api/docentes/${dni}/cursos/${cursoId}/estudiantes${qsAlum}`));
       const jA = await rA.json();
       const listAlumnos = (rA.ok && jA.ok && Array.isArray(jA.data)) ? jA.data : [];
-      const filtrados = soloAlumno && dniAlumno.trim() ? listAlumnos.filter(a => String(a.dni) === dniAlumno.trim()) : listAlumnos;
-      setAlumnos(filtrados);
+      setAlumnos(listAlumnos);
       const qsActs = `?curso_id=${cursoId}${gradoId ? `&grado_id=${gradoId}` : ''}${seccionId ? `&seccion_id=${seccionId}` : ''}`;
       const rB = await fetch(api(`/api/curso-actividades${qsActs}`));
       const jB = await rB.json();
@@ -87,8 +84,7 @@ export default function Reportes() {
     const meta = [
       ['Reporte', `${cursoNom}${gradoNom ? ` - ${gradoNom}` : ''}${secNom ? ` ${secNom}` : ''}`],
       ['Generado', `${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`],
-      ['Total alumnos', String(alumnos.length)],
-      soloAlumno && dniAlumno ? ['Filtro DNI', dniAlumno] : null
+      ['Total alumnos', String(alumnos.length)]
     ].filter(Boolean);
     const headers = ['DNI', 'Apellidos', 'Nombres', ...actividades.map(a => a.nombre)];
     const rows = alumnos.map(a => {
@@ -112,7 +108,7 @@ export default function Reportes() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const fname = `reporte_${cursoNom || 'curso'}${gradoNom ? `_${gradoNom}` : ''}${secNom ? `_${secNom}` : ''}${soloAlumno && dniAlumno ? `_${dniAlumno}` : ''}.csv`;
+    const fname = `reporte_${cursoNom || 'curso'}${gradoNom ? `_${gradoNom}` : ''}${secNom ? `_${secNom}` : ''}.csv`;
     a.download = fname;
     a.click();
     URL.revokeObjectURL(url);
@@ -123,7 +119,7 @@ export default function Reportes() {
     const cursoNom = (cursos.find(c => c.id === cursoId)?.nombre) || '';
     const gradoNom = (asignaciones[cursoId]?.find(x => x.grado_id === gradoId)?.grado) || '';
     const secNom = (asignaciones[cursoId]?.find(x => x.seccion_id === seccionId)?.seccion) || '';
-    const title = `Reporte ${cursoNom}${gradoNom ? ` - ${gradoNom}` : ''}${secNom ? ` ${secNom}` : ''}${soloAlumno && dniAlumno ? ` - DNI ${dniAlumno}` : ''}`;
+    const title = `Reporte ${cursoNom}${gradoNom ? ` - ${gradoNom}` : ''}${secNom ? ` ${secNom}` : ''}`;
     const headCols = ['DNI','Apellidos','Nombres',...actividades.map(a => a.nombre)];
     const bodyRows = alumnos.map(a => {
       const cols = [a.dni, a.apellidos, a.nombres];
@@ -144,7 +140,6 @@ export default function Reportes() {
       doc.setFontSize(10);
       doc.text(`Generado: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, 40, 58);
       doc.text(`Total alumnos: ${alumnos.length}`, 40, 72);
-      if (soloAlumno && dniAlumno) doc.text(`Filtro DNI: ${dniAlumno}`, 40, 86);
       autoTable(doc, {
         head: [headCols],
         body: bodyRows,
@@ -153,7 +148,7 @@ export default function Reportes() {
         headStyles: { fillColor: [243, 244, 246], textColor: 20 },
         margin: { left: 40, right: 40 }
       });
-      const fname = `reporte_${cursoNom || 'curso'}${gradoNom ? `_${gradoNom}` : ''}${secNom ? `_${secNom}` : ''}${soloAlumno && dniAlumno ? `_${dniAlumno}` : ''}.pdf`;
+      const fname = `reporte_${cursoNom || 'curso'}${gradoNom ? `_${gradoNom}` : ''}${secNom ? `_${secNom}` : ''}.pdf`;
       doc.save(fname);
     } catch (e) {
       const style = `@page{size:A4 landscape;margin:16mm;}body{font-family:Segoe UI,Roboto,Arial,sans-serif;padding:16px;}h1{margin:0 0 12px 0;font-size:22px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #888;padding:6px 8px;font-size:12px;text-align:left;}thead th{background:#f3f4f6;}`;
@@ -203,14 +198,6 @@ export default function Reportes() {
               })}
             </select>
           </span>
-          <span>
-            <label style={{ marginRight: 8 }}>DNI alumno:</label>
-            <input type="text" inputMode="numeric" placeholder="Opcional" value={dniAlumno} onChange={e => setDniAlumno(e.target.value)} style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--color-border)' }} />
-          </span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={soloAlumno} onChange={e => setSoloAlumno(e.target.checked)} />
-            <span>Solo este alumno</span>
-          </label>
           <button onClick={cargarDatos} disabled={!cursoId}>Cargar</button>
           <button onClick={exportCSV} disabled={alumnos.length === 0 || loading}>Exportar CSV</button>
           <button onClick={exportPDF} disabled={alumnos.length === 0 || loading}>Generar PDF</button>
@@ -223,18 +210,18 @@ export default function Reportes() {
             <table>
               <thead>
                 <tr>
-                  <th>DNI</th>
-                  <th>Apellidos</th>
-                  <th>Nombres</th>
+                  <th className="sticky-col sticky-col-1">DNI</th>
+                  <th className="sticky-col sticky-col-2">Apellidos</th>
+                  <th className="sticky-col sticky-col-3">Nombres</th>
                   {actividades.map(a => (<th key={a.id}>{a.nombre}</th>))}
                 </tr>
               </thead>
               <tbody>
                 {alumnos.map(a => (
                   <tr key={a.dni}>
-                    <td>{a.dni}</td>
-                    <td>{a.apellidos}</td>
-                    <td>{a.nombres}</td>
+                    <td className="sticky-col sticky-col-1">{a.dni}</td>
+                    <td className="sticky-col sticky-col-2">{a.apellidos}</td>
+                    <td className="sticky-col sticky-col-3">{a.nombres}</td>
                     {actividades.map(act => (
                       <td key={`${act.id}-${a.dni}`}>{(notas[act.id] && notas[act.id][a.dni]) !== undefined ? notas[act.id][a.dni] : ''}</td>
                     ))}

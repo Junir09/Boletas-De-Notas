@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, FileText, BarChart3, LogOut } from 'lucide-react';
-import '../assets/css/admin/layout.css';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/docente/docentehome.css';
 import { api } from '../api';

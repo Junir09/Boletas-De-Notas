@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/lista-docentes.css';
 import { api } from '../api';
-import { Edit, Trash2, XCircle, MoreVertical, UserPlus } from 'lucide-react';
+import { Edit, Trash2, XCircle, MoreVertical, UserPlus, AlertTriangle, Check, Info } from 'lucide-react';
 
 function ListaDocentes() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modal, setModal] = useState({ visible: false, dni: '', cursos: [], selectedIds: [], error: '' });
+  
+  // Modal de confirmación/alerta
+  const [confirmModal, setConfirmModal] = useState({ 
+    open: false, 
+    type: '', // 'confirm', 'success', 'error'
+    title: '', 
+    message: '',
+    onConfirm: null 
+  });
+
   const [asignadosByDni, setAsignadosByDni] = useState({});
   const [loadingByDni, setLoadingByDni] = useState({});
   const [editingDni, setEditingDni] = useState('');
@@ -142,18 +152,52 @@ function ListaDocentes() {
     } catch (_) {}
   };
 
-  const eliminarDocente = async (dni) => {
-    if (!window.confirm('¿Eliminar este docente? Se quitarán sus asignaciones.')) return;
+  const eliminarDocente = (dni) => {
+    setConfirmModal({
+      open: true,
+      type: 'confirm',
+      title: '¿Eliminar docente?',
+      message: '¿Eliminar este docente? Se quitarán sus asignaciones.',
+      onConfirm: () => executeDelete(dni)
+    });
+  };
+
+  const executeDelete = async (dni) => {
     try {
       const resp = await fetch(api(`/api/docentes/${encodeURIComponent(dni)}`), { method: 'DELETE' });
       const json = await resp.json();
-      if (!resp.ok || !json.ok) return;
-      if (editingDni === dni) cancelarEdicion();
-      const refresh = await fetch(api('/api/docentes'));
-      const j2 = await refresh.json();
-      setData(Array.isArray(j2.data) ? j2.data : []);
-      try { window.dispatchEvent(new Event('cursos-updated')); } catch (_) {}
-    } catch (_) {}
+      if (resp.ok && json.ok) {
+        if (editingDni === dni) cancelarEdicion();
+        const refresh = await fetch(api('/api/docentes'));
+        const j2 = await refresh.json();
+        setData(Array.isArray(j2.data) ? j2.data : []);
+        try { window.dispatchEvent(new Event('cursos-updated')); } catch (_) {}
+        
+        setConfirmModal({
+          open: true,
+          type: 'success',
+          title: 'Docente eliminado',
+          message: 'El docente ha sido eliminado correctamente.',
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, open: false }))
+        });
+      } else {
+        setConfirmModal({
+          open: true,
+          type: 'error',
+          title: 'Error',
+          message: json.error || 'Error al eliminar docente',
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, open: false }))
+        });
+      }
+    } catch (e) {
+      setConfirmModal({
+        open: true,
+        type: 'error',
+        title: 'Error de conexión',
+        message: e.message,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, open: false }))
+      });
+    }
   };
 
   const cargarAsignados = async (dni) => {
@@ -326,10 +370,23 @@ function ListaDocentes() {
             {modal.cursos.length > 0 ? (
               <div>
                 {modal.cursos.map(c => (
-                  <div key={c.id} className="inline-actions">
+                  <div 
+                    key={c.id} 
+                    className="inline-actions"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      const isSelected = modal.selectedIds.includes(c.id);
+                      setModal(m => {
+                        const set = new Set(m.selectedIds);
+                        if (!isSelected) set.add(c.id); else set.delete(c.id);
+                        return { ...m, selectedIds: Array.from(set) };
+                      });
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={modal.selectedIds.includes(c.id)}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) => {
                         const checked = e.target.checked;
                         setModal(m => {
@@ -339,8 +396,16 @@ function ListaDocentes() {
                         });
                       }}
                     />
-                    <span>{c.nombre}</span>
-                    <button type="button" onClick={() => asignarUno(c.id)}>Asignar</button>
+                    <span style={{ flex: 1 }}>{c.nombre}</span>
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        asignarUno(c.id);
+                      }}
+                    >
+                      Asignar
+                    </button>
                   </div>
                 ))}
               </div>
@@ -350,6 +415,31 @@ function ListaDocentes() {
             <div className="modal-actions">
               <button type="button" onClick={cerrarModal}>Cerrar</button>
               <button type="button" onClick={confirmarAsignacionMultiple} disabled={!modal.selectedIds || modal.selectedIds.length === 0}>Asignar seleccionados</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN/ALERTA */}
+      {confirmModal.open && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className={`modal-icon ${confirmModal.type}`}>
+              {confirmModal.type === 'success' && <Check size={32} />}
+              {(confirmModal.type === 'error' || confirmModal.type === 'confirm') && <AlertTriangle size={32} />}
+              {confirmModal.type === 'info' && <Info size={32} />}
+            </div>
+            <h4>{confirmModal.title}</h4>
+            <p>{confirmModal.message}</p>
+            <div className="modal-actions">
+              {confirmModal.type === 'confirm' ? (
+                <>
+                  <button className="btn-secondary" onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}>Cancelar</button>
+                  <button className="btn-danger" onClick={confirmModal.onConfirm}>Confirmar</button>
+                </>
+              ) : (
+                <button className="btn-primary" onClick={confirmModal.onConfirm || (() => setConfirmModal(prev => ({ ...prev, open: false })))}>Aceptar</button>
+              )}
             </div>
           </div>
         </div>

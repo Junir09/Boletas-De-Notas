@@ -1,6 +1,6 @@
 /****************************************************
  * LISTA DOCENTES — ESTILO INSTITUCIONAL DINÁMICO
-****************************************************/
+ ****************************************************/
 .lista-docentes {
   padding: 28px;
   display: flex;
@@ -13,7 +13,7 @@
 
 /****************************************************
  * HEADER
-****************************************************/
+ ****************************************************/
 .lista-docentes h2 {
   margin: 0;
   font-size: 1.9rem;
@@ -29,7 +29,7 @@
 
 /****************************************************
  * TABLA
-****************************************************/
+ ****************************************************/
 .lista-docentes .table-wrap {
   background: var(--color-card-bg);
   border-radius: 14px;
@@ -84,7 +84,7 @@
 
 /****************************************************
  * INPUT EDICIÓN
-****************************************************/
+ ****************************************************/
 .lista-docentes .edit-input {
   width: 100%;
   padding: 8px 10px;
@@ -103,7 +103,7 @@
 
 /****************************************************
  * INLINE CURSOS
-****************************************************/
+ ****************************************************/
 .lista-docentes .inline-actions {
   display: flex;
   gap: 8px;
@@ -135,7 +135,7 @@
 
 /****************************************************
  * BOTONES — JERARQUÍA ACADÉMICA
-****************************************************/
+ ****************************************************/
 .lista-docentes button {
   font-family: inherit;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
@@ -180,7 +180,7 @@
 
 /****************************************************
  * DROPDOWN DE ACCIONES
-****************************************************/
+ ****************************************************/
 .lista-docentes .dropdown-wrapper {
   position: relative;
 }
@@ -246,13 +246,11 @@
   color: var(--color-danger);
 }
 
-.lista-docentes .dropdown-menu-inline button.btn-danger:hover {
-  background: var(--color-danger-soft);
-}
+
 
 /****************************************************
  * MODAL — ASIGNACIÓN DE CURSOS (MEJORADO)
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-overlay {
   position: fixed;
   inset: 0;
@@ -311,12 +309,13 @@
 
 /****************************************************
  * MODAL ACTIONS
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 26px;
+  gap: 12px; /* Added gap for better spacing */
 }
 
 .lista-docentes .modal-actions button:first-child {
@@ -338,7 +337,7 @@
 
 /****************************************************
  * STATUS
-****************************************************/
+ ****************************************************/
 .lista-docentes .status-error {
   background: var(--color-danger-soft);
   border: 1px solid var(--color-danger);
@@ -349,7 +348,7 @@
 }
 /****************************************************
  * BOTONES GENÉRICOS DENTRO DEL MODAL (SIN CLASE)
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-card button {
   position: relative;
   font-family: inherit;
@@ -367,7 +366,7 @@
 
 /****************************************************
  * BOTÓN "ASIGNAR" (por curso)
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-card .inline-actions button {
   background: linear-gradient(
     to bottom,
@@ -394,7 +393,7 @@
 
 /****************************************************
  * BOTÓN "CERRAR" (MODAL)
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-actions button:first-child {
   background: linear-gradient(
     to bottom,
@@ -409,7 +408,6 @@
 }
 
 .lista-docentes .modal-actions button:first-child:hover {
-  background: var(--color-fondo-alt);
   transform: translateY(-1px);
   box-shadow:
     0 8px 18px rgba(0,0,0,0.15);
@@ -417,7 +415,7 @@
 
 /****************************************************
  * BOTÓN "ASIGNAR SELECCIONADOS" (PRINCIPAL MODAL)
-****************************************************/
+ ****************************************************/
 .lista-docentes .modal-actions button:last-child {
   background: linear-gradient(
     to bottom,
@@ -441,4 +439,49 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/****************************************************
+ * MODAL ICON & BUTTONS (ALERT/CONFIRM)
+ ****************************************************/
+.lista-docentes .modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+}
+
+.lista-docentes .modal-icon.confirm,
+.lista-docentes .modal-icon.error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.lista-docentes .modal-icon.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.lista-docentes .modal-icon.info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.lista-docentes .modal-card p {
+  text-align: center;
+  color: var(--color-text);
+  margin-bottom: 24px;
+}
+
+.lista-docentes .modal-card h4 {
+  text-align: center;
+}
+
+
+
+.lista-docentes .btn-primary {
+  width: 100%; /* Full width for single action */
 }

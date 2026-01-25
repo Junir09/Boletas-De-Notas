@@ -40,7 +40,7 @@ export default function Cursos({ alumno, cursos, onIrBoletines }) {
                 {g.cursos.map(c => (
                   <div key={c.id} className="curso-card" onClick={() => onIrBoletines && onIrBoletines(c.id)}>
                     <h3>{c.nombre}</h3>
-                    {alumno ? (<p>{`${alumno.grado}°${alumno.seccion ? ` ${alumno.seccion}` : ''}`}</p>) : null}
+                    {alumno ? (<p>{`${String(alumno.grado).includes('°') ? alumno.grado : `${alumno.grado}°`}${alumno.seccion ? ` ${alumno.seccion}` : ''}`}</p>) : null}
                   </div>
                 ))}
               </div>

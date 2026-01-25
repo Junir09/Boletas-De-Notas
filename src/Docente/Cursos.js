@@ -80,12 +80,12 @@ export default function Cursos({ docente = null, cursos = [], loading = false, a
                 <div className="estudiantes-table">
                   <div className="table-scroll">
                     <div className={`scroll-area${modalAlumnos.length === 0 ? ' no-alumnos' : ''}`} ref={scrollRef} onScroll={() => setScrollVal(scrollRef.current ? scrollRef.current.scrollLeft : 0)}>
-                      <table>
+                      <table style={{ width: '100%' }}>
                         <thead>
                           <tr>
-                            <th>DNI</th>
-                            <th>Apellidos</th>
-                            <th>Nombres</th>
+                            <th style={{ width: '20%', textAlign: 'left', padding: '14px 16px' }}>DNI</th>
+                            <th style={{ width: '40%', textAlign: 'left', padding: '14px 16px' }}>Apellidos</th>
+                            <th style={{ width: '40%', textAlign: 'left', padding: '14px 16px' }}>Nombres</th>
                           </tr>
                         </thead>
                         <tbody>

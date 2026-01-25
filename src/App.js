@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api';
-import './assets/css/login.css';
 import LoginAvanzado from './pages/LoginAvanzado';
 import DocenteHome from './Docente/DocenteHome';
 import AdminHome from './administrador/AdminHome';

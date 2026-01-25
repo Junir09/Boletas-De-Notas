@@ -115,22 +115,76 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  background: var(--color-fondo-alt);
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 4px 12px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .lista-docentes .inline-actions span button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
-  color: var(--color-danger);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--color-text-muted);
   cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-left: 2px;
 }
 
 .lista-docentes .inline-actions span button:hover {
-  background: var(--color-danger-soft);
-  border-radius: 4px;
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+/* Botón Cerrar (lista expandida) */
+.lista-docentes .inline-actions > button:not([title]) {
+  background: var(--color-fondo-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lista-docentes .inline-actions > button:not([title]):hover {
+  background: var(--color-border);
+  color: var(--color-text-strong);
+}
+
+/* Botón Editar (icono) */
+.lista-docentes .inline-actions > button[title] {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.lista-docentes .inline-actions > button[title]:hover {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border-color: var(--color-principal);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /****************************************************

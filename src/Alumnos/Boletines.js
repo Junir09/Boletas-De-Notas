@@ -6,21 +6,38 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
   const [actividades, setActividades] = useState([]);
   const [notas, setNotas] = useState({});
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
 
   const notaALetra = (notaNum) => {
     if (notaNum == null || isNaN(notaNum)) return '-';
     const n = Math.round(Number(notaNum));
-    if (n >= 19) return 'A++';
+    if (n === 20) return 'S+';
+    if (n === 19) return 'S';
     if (n === 18) return 'A+';
     if (n === 17) return 'A';
     if (n === 16) return 'B+';
     if (n === 15) return 'B';
     if (n === 14) return 'C+';
     if (n === 13) return 'C';
-    if (n === 12) return 'D+';
-    if (n === 11) return 'D';
+    if (n === 12) return 'D';
+    if (n === 11) return 'F';
     return '-F';
   };
+
+  const formatDate = (isoString) => {
+    if (!isoString) return '-';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString();
+    } catch { return '-'; }
+  };
+
+  useEffect(() => {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('config') || '{}');
+      if (cfg.logoDataUrl) setLogoUrl(cfg.logoDataUrl);
+    } catch (_) {}
+  }, []);
 
   useEffect(() => {
     if (alumno && cursoSel) cargarBoletas(cursoSel);
@@ -143,7 +160,16 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text('Boletín de Notas', 40, 40);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
-      doc.circle(W - 60, 40, 16, 'S');
+      if (logoUrl) {
+        try {
+          const fmt = logoUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+          doc.addImage(logoUrl, fmt, W - 110, 15, 70, 70);
+        } catch (e) {
+          doc.circle(W - 75, 50, 35, 'S');
+        }
+      } else {
+        doc.circle(W - 75, 50, 35, 'S');
+      }
       doc.setTextColor(0, 0, 0);
       doc.setFillColor(225, 229, 233);
       doc.rect(40, 130, 110, 26, 'F');
@@ -162,8 +188,8 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text(anio, 160, 237);
       doc.setDrawColor(104, 126, 122);
       doc.line(40, 260, W - 40, 260);
-      const headCols = ['Actividad', 'Nota', 'Letra'];
-      const bodyRows = [[act.nombre, notaNum != null ? notaNum.toFixed(2) : '-', letra || '-']];
+      const headCols = ['Actividad', 'Nota', 'Letra', 'Fecha'];
+      const bodyRows = [[act.nombre, notaNum != null ? notaNum.toFixed(2) : '-', letra || '-', formatDate(act.created_at)]];
       autoTable(doc, {
         head: [headCols],
         body: bodyRows,
@@ -185,13 +211,23 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
     const cursoNom = cursoObj.nombre || '';
     const docentes = Array.isArray(cursoObj.docentes) ? cursoObj.docentes.map(d => (typeof d === 'string' ? d : d.nombre)).join(', ') : '';
     const anio = String(new Date().getFullYear());
+    
+    let suma = 0;
+    let count = 0;
     const rows = actividades.map(a => {
       const v = (notas[a.id] && notas[a.id][alumno.dni]) !== undefined ? notas[a.id][alumno.dni] : '';
       const num = v === '' || v == null ? null : Number(v);
       const notaNum = typeof num === 'number' && !isNaN(num) ? num : null;
+      if (notaNum != null) {
+        suma += notaNum;
+        count++;
+      }
       const letra = notaALetra(notaNum);
-      return [a.nombre, notaNum != null ? notaNum.toFixed(2) : '-', letra];
+      return [a.nombre, notaNum != null ? notaNum.toFixed(2) : '-', letra, formatDate(a.created_at)];
     });
+
+    const promFinal = count > 0 ? (suma / count) : 0;
+
     try {
       const { default: jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
@@ -206,7 +242,16 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text('Boletín de Notas', 40, 40);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
-      doc.circle(W - 60, 40, 16, 'S');
+      if (logoUrl) {
+        try {
+          const fmt = logoUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+          doc.addImage(logoUrl, fmt, W - 110, 15, 70, 70);
+        } catch (e) {
+          doc.circle(W - 75, 50, 35, 'S');
+        }
+      } else {
+        doc.circle(W - 75, 50, 35, 'S');
+      }
       doc.setTextColor(0, 0, 0);
       doc.setFillColor(225, 229, 233);
       doc.rect(40, 130, 110, 26, 'F');
@@ -225,14 +270,22 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       doc.text(anio, 160, 237);
       doc.setDrawColor(104, 126, 122);
       doc.line(40, 260, W - 40, 260);
-      const headCols = ['Actividad', 'Nota', 'Letra'];
+      
+      const headCols = ['Actividad', 'Promedio', 'Letra', 'Fecha'];
       autoTable(doc, {
         head: [headCols],
         body: rows,
         startY: 270,
         styles: { fontSize: 11 },
         headStyles: { fillColor: [225, 229, 233], textColor: 20 },
-        margin: { left: 40, right: 40 }
+        margin: { left: 40, right: 40 },
+        foot: [[
+          'Promedio Final', 
+          promFinal.toFixed(2), 
+          notaALetra(promFinal), 
+          ''
+        ]],
+        footStyles: { fillColor: [216, 179, 99], textColor: 255, fontStyle: 'bold' }
       });
       doc.setFontSize(9);
       doc.text('www.escolar - Dirección - Teléfono', 40, doc.internal.pageSize.getHeight() - 30);
@@ -250,42 +303,54 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
       const W = doc.internal.pageSize.getWidth();
       const H = doc.internal.pageSize.getHeight();
       const anio = String(new Date().getFullYear());
-      for (let idx = 0; idx < cursos.length; idx++) {
-        const cursoObj = cursos[idx];
-        const cursoNom = cursoObj.nombre || '';
-        const docentes = Array.isArray(cursoObj.docentes) ? cursoObj.docentes.map(d => (typeof d === 'string' ? d : d.nombre)).join(', ') : '';
-        if (idx > 0) doc.addPage();
-        doc.setFillColor(104, 126, 122);
-        doc.rect(0, 0, W, 120, 'F');
-        doc.setFillColor(216, 179, 99);
-        doc.rect(0, 60, 140, 28, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(24);
-        doc.text('Boletín de Notas', 40, 40);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(28);
-        doc.circle(W - 60, 40, 16, 'S');
-        doc.setTextColor(0, 0, 0);
-        doc.setFillColor(225, 229, 233);
-        doc.rect(40, 130, 110, 26, 'F');
-        doc.rect(40, 160, 110, 26, 'F');
-        doc.rect(40, 190, 110, 26, 'F');
-        doc.rect(40, 220, 110, 26, 'F');
-        doc.setFontSize(11);
-        doc.text('NOMBRE:', 50, 147);
-        doc.text('GRADO:', 50, 177);
-        doc.text('PROFESOR:', 50, 207);
-        doc.text('AÑO ESCOLAR:', 50, 237);
-        doc.setFontSize(12);
-        doc.text(`${alumno.apellidos} ${alumno.nombres}`, 160, 147);
-        doc.text(`${alumno.grado ? (String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°') : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
-        doc.text(docentes || '(no asignado)', 160, 207);
-        doc.text(anio, 160, 237);
-        doc.setDrawColor(104, 126, 122);
-        doc.line(40, 260, W - 40, 260);
+
+      doc.setFillColor(104, 126, 122);
+      doc.rect(0, 0, W, 120, 'F');
+      doc.setFillColor(216, 179, 99);
+      doc.rect(0, 60, 140, 28, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.text('Resumen de Notas', 40, 40);
+      
+      if (logoUrl) {
+        try {
+          const fmt = logoUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+          doc.addImage(logoUrl, fmt, W - 110, 15, 70, 70);
+        } catch (e) {
+          doc.circle(W - 75, 50, 35, 'S');
+        }
+      } else {
+        doc.circle(W - 75, 50, 35, 'S');
+      }
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFillColor(225, 229, 233);
+      doc.rect(40, 130, 110, 26, 'F');
+      doc.rect(40, 160, 110, 26, 'F');
+      doc.rect(40, 190, 110, 26, 'F');
+      
+      doc.setFontSize(11);
+      doc.text('NOMBRE:', 50, 147);
+      doc.text('GRADO:', 50, 177);
+      doc.text('AÑO ESCOLAR:', 50, 207);
+
+      doc.setFontSize(12);
+      doc.text(`${alumno.apellidos} ${alumno.nombres}`, 160, 147);
+      doc.text(`${alumno.grado ? (String(alumno.grado).includes('°') ? alumno.grado : alumno.grado + '°') : ''}${alumno.seccion ? ' ' + alumno.seccion : ''}`, 160, 177);
+      doc.text(anio, 160, 207);
+
+      doc.setDrawColor(104, 126, 122);
+      doc.line(40, 230, W - 40, 230);
+
+      const summaryRows = [];
+
+      // Iterar sobre todos los cursos para calcular promedios
+      for (const cursoObj of cursos) {
+        // Lógica para obtener gradoId y seccionId (reutilizada)
         let gradoId = alumno.grado_id || 0;
         let seccionId = (alumno.seccion_id != null ? alumno.seccion_id : null);
         const norm = (s) => String(s || '').trim().toUpperCase();
+        
         if (!gradoId) {
           try {
             const rG = await fetch(api('/api/grados'));
@@ -316,36 +381,56 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
             }
           } catch (_) {}
         }
+
         const qsActs = `?curso_id=${cursoObj.id}&grado_id=${gradoId}` + (seccionId ? `&seccion_id=${seccionId}` : '');
-        const rB = await fetch(api(`/api/curso-actividades${qsActs}`));
-        const jB = await rB.json();
-        const listActs = (rB.ok && jB.ok && Array.isArray(jB.data)) ? jB.data : [];
-        const rows = [];
-        for (const a of listActs) {
-          try {
-            const r = await fetch(api(`/api/actividad-notas?actividad_id=${a.id}`));
-            const j = await r.json();
-            const v = (r.ok && j.ok && Array.isArray(j.data)) ? (j.data.find(row => String(row.estudiante_dni) === String(alumno.dni))?.nota ?? null) : null;
-            const notaNum = v != null ? Number(v) : null;
-            const letra = notaALetra(notaNum);
-            rows.push([a.nombre, notaNum != null ? notaNum.toFixed(2) : '-', letra]);
-          } catch (_) {
-            rows.push([a.nombre, '-', '-']);
+        try {
+          const rB = await fetch(api(`/api/curso-actividades${qsActs}`));
+          const jB = await rB.json();
+          const listActs = (rB.ok && jB.ok && Array.isArray(jB.data)) ? jB.data : [];
+          
+          let suma = 0;
+          let count = 0;
+
+          // Obtener notas para cada actividad
+          for (const a of listActs) {
+            try {
+              const r = await fetch(api(`/api/actividad-notas?actividad_id=${a.id}`));
+              const j = await r.json();
+              const v = (r.ok && j.ok && Array.isArray(j.data)) ? (j.data.find(row => String(row.estudiante_dni) === String(alumno.dni))?.nota ?? null) : null;
+              const notaNum = v != null ? Number(v) : null;
+              
+              if (notaNum != null && !isNaN(notaNum)) {
+                suma += notaNum;
+                count++;
+              }
+            } catch (_) {}
           }
+          
+          const promedio = count > 0 ? (suma / count) : 0;
+          summaryRows.push([
+            cursoObj.nombre,
+            promedio.toFixed(2),
+            notaALetra(promedio)
+          ]);
+        } catch (_) {
+          summaryRows.push([cursoObj.nombre, '-', '-']);
         }
-        const headCols = ['Actividad', 'Nota', 'Letra'];
-        autoTable(doc, {
-          head: [headCols],
-          body: rows,
-          startY: 270,
-          styles: { fontSize: 11 },
-          headStyles: { fillColor: [225, 229, 233], textColor: 20 },
-          margin: { left: 40, right: 40 }
-        });
-        doc.setFontSize(9);
-        doc.text('www.escolar - Dirección - Teléfono', 40, H - 30);
       }
-      const fname = `boletin_${alumno.dni || 'alumno'}_todos_cursos.pdf`;
+
+      const headCols = ['Curso', 'Promedio General', 'Letra'];
+      autoTable(doc, {
+        head: [headCols],
+        body: summaryRows,
+        startY: 250,
+        styles: { fontSize: 11 },
+        headStyles: { fillColor: [225, 229, 233], textColor: 20 },
+        margin: { left: 40, right: 40 }
+      });
+
+      doc.setFontSize(9);
+      doc.text('www.escolar - Dirección - Teléfono', 40, H - 30);
+      
+      const fname = `boletin_${alumno.dni || 'alumno'}_resumen_cursos.pdf`;
       doc.save(fname);
     } catch (_) {}
   };

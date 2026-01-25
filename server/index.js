@@ -110,7 +110,17 @@ ensureEstudiantesFK();
 async function ensureActividades() {
   try {
     await pool.query('CREATE TABLE IF NOT EXISTS curso_actividad (id INT UNSIGNED NOT NULL AUTO_INCREMENT, curso_id INT UNSIGNED NOT NULL, grado_id INT UNSIGNED NOT NULL, seccion_id INT UNSIGNED NULL, nombre VARCHAR(120) NOT NULL, orden INT UNSIGNED NOT NULL DEFAULT 1, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), KEY idx_ca_curso (curso_id), KEY idx_ca_grado (grado_id), KEY idx_ca_seccion (seccion_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
-    await pool.query('CREATE TABLE IF NOT EXISTS actividad_nota (id INT UNSIGNED NOT NULL AUTO_INCREMENT, actividad_id INT UNSIGNED NOT NULL, estudiante_dni VARCHAR(20) NOT NULL, nota DECIMAL(5,2) NULL, PRIMARY KEY (id), UNIQUE KEY uniq_act_est (actividad_id, estudiante_dni), KEY idx_an_actividad (actividad_id), KEY idx_an_estudiante (estudiante_dni)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    await pool.query('CREATE TABLE IF NOT EXISTS actividad_nota (id INT UNSIGNED NOT NULL AUTO_INCREMENT, actividad_id INT UNSIGNED NOT NULL, estudiante_dni VARCHAR(20) NOT NULL, nota DECIMAL(5,2) NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY uniq_act_est (actividad_id, estudiante_dni), KEY idx_an_actividad (actividad_id), KEY idx_an_estudiante (estudiante_dni)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    await pool.query('CREATE TABLE IF NOT EXISTS nota_historial (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nota_id INT UNSIGNED NOT NULL, valor_anterior DECIMAL(5,2) NULL, valor_nuevo DECIMAL(5,2) NULL, fecha TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), KEY idx_nh_nota (nota_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    
+    // Migraciones para columnas faltantes
+    try {
+      const [cols] = await pool.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "actividad_nota" AND COLUMN_NAME = "created_at"');
+      if (cols.length === 0) {
+        await pool.query('ALTER TABLE actividad_nota ADD COLUMN created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP');
+        await pool.query('ALTER TABLE actividad_nota ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+      }
+    } catch (_) {}
   } catch (e) {
     console.error('Ensure actividades error:', e.message);
   }
@@ -290,7 +300,7 @@ app.get('/api/curso-actividades', async (req, res) => {
   if (!cursoId || !gradoId) return res.status(400).json({ ok: false, error: 'Falta curso_id o grado_id' });
   try {
     const params = [cursoId, gradoId];
-    let sql = 'SELECT id, nombre, orden FROM curso_actividad WHERE curso_id = ? AND grado_id = ?';
+    let sql = 'SELECT id, nombre, orden, created_at FROM curso_actividad WHERE curso_id = ? AND grado_id = ?';
     if (seccionId) { sql += ' AND seccion_id = ?'; params.push(seccionId); } else { sql += ' AND seccion_id IS NULL'; }
     sql += ' ORDER BY orden, id';
     const [rows] = await pool.query(sql, params);
@@ -350,12 +360,39 @@ app.post('/api/actividad-notas/bulk', async (req, res) => {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+      
+      // 1. Obtener notas existentes para comparar
+      const [existingRows] = await conn.query('SELECT id, estudiante_dni, nota FROM actividad_nota WHERE actividad_id = ?', [a]);
+      const existingMap = {}; // dni -> { id, nota }
+      for (const row of existingRows) {
+        existingMap[row.estudiante_dni] = row;
+      }
+
       for (const item of notas) {
         const dni = String(item.dni || '').trim();
         const val = item.nota != null ? Number(item.nota) : null;
         if (!dni) continue;
-        await conn.query('INSERT INTO actividad_nota (actividad_id, estudiante_dni, nota) VALUES (?,?,?) ON DUPLICATE KEY UPDATE nota = VALUES(nota)', [a, dni, val]);
+
+        const current = existingMap[dni];
+
+        if (current) {
+          // Existe: Verificar si cambió
+          const currentVal = current.nota != null ? Number(current.nota) : null;
+          // Comparar considerando nulls y tolerancia float
+          const changed = (val !== currentVal);
+          
+          if (changed) {
+             // Guardar historial
+             await conn.query('INSERT INTO nota_historial (nota_id, valor_anterior, valor_nuevo) VALUES (?, ?, ?)', [current.id, currentVal, val]);
+             // Actualizar nota
+             await conn.query('UPDATE actividad_nota SET nota = ? WHERE id = ?', [val, current.id]);
+          }
+        } else {
+          // No existe: Insertar
+          await conn.query('INSERT INTO actividad_nota (actividad_id, estudiante_dni, nota) VALUES (?,?,?)', [a, dni, val]);
+        }
       }
+      
       await conn.commit();
       conn.release();
       res.json({ ok: true });
@@ -364,6 +401,35 @@ app.post('/api/actividad-notas/bulk', async (req, res) => {
       conn.release();
       throw err;
     }
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get('/api/actividad-notas/historial', async (req, res) => {
+  const actividadId = Number(req.query.actividad_id || 0);
+  const dni = String(req.query.dni || '').trim();
+  if (!actividadId || !dni) return res.status(400).json({ ok: false, error: 'Falta actividad_id o dni' });
+  try {
+    const [notaRows] = await pool.query('SELECT id, created_at, updated_at FROM actividad_nota WHERE actividad_id = ? AND estudiante_dni = ?', [actividadId, dni]);
+    if (notaRows.length === 0) return res.json({ ok: true, data: null }); // No existe nota aún
+
+    const nota = notaRows[0];
+    const [histRows] = await pool.query('SELECT valor_anterior, valor_nuevo, fecha FROM nota_historial WHERE nota_id = ? ORDER BY fecha DESC', [nota.id]);
+    
+    // Obtener created_at de la actividad también, por si acaso
+    const [actRows] = await pool.query('SELECT created_at FROM curso_actividad WHERE id = ?', [actividadId]);
+    const actividadCreatedAt = actRows[0] ? actRows[0].created_at : null;
+
+    res.json({ 
+      ok: true, 
+      data: {
+        actividad_created_at: actividadCreatedAt,
+        nota_created_at: nota.created_at,
+        nota_updated_at: nota.updated_at,
+        historial: histRows
+      }
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -1093,11 +1159,49 @@ app.post('/api/estudiantes/grados/promover', async (req, res) => {
   const { dnis } = req.body || {};
   const list = Array.isArray(dnis) ? dnis.map(d => String(d || '').trim()).filter(Boolean) : [];
   if (list.length === 0) return res.status(400).json({ ok: false, error: 'Lista de DNI vacía' });
-  const placeholders = list.map(() => '?').join(',');
   try {
-    const sql = `UPDATE estudiantes SET grado = LEAST(6, grado + 1) WHERE grado IS NOT NULL AND dni IN (${placeholders})`;
-    const [result] = await pool.query(sql, list);
-    res.json({ ok: true, affected: result.affectedRows });
+    // 1. Obtener mapa de grados (ID <-> Número)
+    const [grados] = await pool.query('SELECT id, nombre FROM grados');
+    const numToId = new Map();
+    const idToNum = new Map();
+    
+    grados.forEach(g => {
+      const m = String(g.nombre).match(/(\d+)/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        numToId.set(n, g.id);
+        idToNum.set(g.id, n);
+      }
+    });
+
+    // 2. Obtener estudiantes actuales
+    const placeholders = list.map(() => '?').join(',');
+    const [students] = await pool.query(`SELECT dni, grado, grado_id FROM estudiantes WHERE dni IN (${placeholders})`, list);
+
+    let affected = 0;
+    
+    // 3. Calcular y actualizar
+    for (const s of students) {
+      let current = null;
+      // Priorizar grado_id si existe y es válido
+      if (s.grado_id && idToNum.has(s.grado_id)) {
+        current = idToNum.get(s.grado_id);
+      } else {
+        current = s.grado;
+      }
+      
+      if (!current) continue;
+
+      const nextVal = Math.min(6, current + 1);
+      if (nextVal === current) continue;
+
+      const nextId = numToId.get(nextVal) || null;
+      
+      await pool.query('UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni = ?', [nextVal, nextId, s.dni]);
+      affected++;
+    }
+
+    res.json({ ok: true, affected });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -1108,11 +1212,48 @@ app.post('/api/estudiantes/grados/bajar', async (req, res) => {
   const { dnis } = req.body || {};
   const list = Array.isArray(dnis) ? dnis.map(d => String(d || '').trim()).filter(Boolean) : [];
   if (list.length === 0) return res.status(400).json({ ok: false, error: 'Lista de DNI vacía' });
-  const placeholders = list.map(() => '?').join(',');
   try {
-    const sql = `UPDATE estudiantes SET grado = GREATEST(1, grado - 1) WHERE grado IS NOT NULL AND dni IN (${placeholders})`;
-    const [result] = await pool.query(sql, list);
-    res.json({ ok: true, affected: result.affectedRows });
+    // 1. Obtener mapa de grados
+    const [grados] = await pool.query('SELECT id, nombre FROM grados');
+    const numToId = new Map();
+    const idToNum = new Map();
+    
+    grados.forEach(g => {
+      const m = String(g.nombre).match(/(\d+)/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        numToId.set(n, g.id);
+        idToNum.set(g.id, n);
+      }
+    });
+
+    // 2. Obtener estudiantes
+    const placeholders = list.map(() => '?').join(',');
+    const [students] = await pool.query(`SELECT dni, grado, grado_id FROM estudiantes WHERE dni IN (${placeholders})`, list);
+
+    let affected = 0;
+    
+    // 3. Calcular y actualizar
+    for (const s of students) {
+      let current = null;
+      if (s.grado_id && idToNum.has(s.grado_id)) {
+        current = idToNum.get(s.grado_id);
+      } else {
+        current = s.grado;
+      }
+      
+      if (!current) continue;
+
+      const nextVal = Math.max(1, current - 1);
+      if (nextVal === current) continue;
+
+      const nextId = numToId.get(nextVal) || null;
+      
+      await pool.query('UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni = ?', [nextVal, nextId, s.dni]);
+      affected++;
+    }
+
+    res.json({ ok: true, affected });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }

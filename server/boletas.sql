@@ -103,10 +103,32 @@ CREATE TABLE IF NOT EXISTS `actividad_nota` (
   `actividad_id` INT UNSIGNED NOT NULL,
   `estudiante_dni` VARCHAR(20) NOT NULL,
   `nota` DECIMAL(5,2) NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_act_est` (`actividad_id`, `estudiante_dni`),
   KEY `idx_an_actividad` (`actividad_id`),
   KEY `idx_an_estudiante` (`estudiante_dni`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `promedio_detalle` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `promedio_id` INT UNSIGNED NOT NULL,
+  `actividad_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_promedio_detalle` (`promedio_id`, `actividad_id`),
+  KEY `idx_promedio_detalle_promedio` (`promedio_id`),
+  KEY `idx_promedio_detalle_actividad` (`actividad_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `nota_historial` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nota_id` INT UNSIGNED NOT NULL,
+  `valor_anterior` DECIMAL(5,2) NULL,
+  `valor_nuevo` DECIMAL(5,2) NULL,
+  `fecha` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_nh_nota` (`nota_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `curso_grado`
@@ -126,6 +148,13 @@ ALTER TABLE `curso_actividad`
 ALTER TABLE `actividad_nota`
   ADD CONSTRAINT `fk_an_actividad` FOREIGN KEY (`actividad_id`) REFERENCES `curso_actividad`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_an_estudiante` FOREIGN KEY (`estudiante_dni`) REFERENCES `estudiantes`(`dni`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `promedio_detalle`
+  ADD CONSTRAINT `fk_pd_promedio` FOREIGN KEY (`promedio_id`) REFERENCES `curso_actividad`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pd_actividad` FOREIGN KEY (`actividad_id`) REFERENCES `curso_actividad`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `nota_historial`
+  ADD CONSTRAINT `fk_nh_nota` FOREIGN KEY (`nota_id`) REFERENCES `actividad_nota`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `docente_curso`
   ADD CONSTRAINT `fk_dc_docente` FOREIGN KEY (`dni`) REFERENCES `docente`(`dni`) ON DELETE CASCADE ON UPDATE CASCADE,

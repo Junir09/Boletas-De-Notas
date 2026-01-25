@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../assets/css/admin/configuracion.css';
 import { api } from '../api';
-import { Edit, Trash2, Eye, EyeOff, Upload, ZoomIn, ZoomOut, Check, X, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff, ZoomIn, ZoomOut, Check, AlertTriangle } from 'lucide-react';
 
 function ConfiguracionSistema() {
   const [welcomeTitle, setWelcomeTitle] = useState('');
@@ -37,7 +37,6 @@ function ConfiguracionSistema() {
   const [cropPos, setCropPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const cropperRef = useRef(null);
 
   useEffect(() => {
     try {

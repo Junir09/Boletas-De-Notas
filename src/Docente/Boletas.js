@@ -19,6 +19,10 @@ export default function Boletas({ seleccion }) {
   const [addActOpen, setAddActOpen] = useState(false);
   const [addActName, setAddActName] = useState('');
 
+  // Tooltip Historial
+  const [hoveredInfo, setHoveredInfo] = useState(null); // { loading, data, x, y }
+  const hoverTimeoutRef = useRef(null);
+
   const cargarAlumnos = useCallback(async () => {
     setLoading(true);
     try {
@@ -296,6 +300,41 @@ export default function Boletas({ seleccion }) {
     if (el) el.focus();
   };
 
+  const handleMouseEnterNota = (e, actividadId, dni) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    
+    const rect = e.target.getBoundingClientRect();
+    const x = rect.left;
+    const y = rect.bottom + 5;
+
+    // Mostrar loading inmediatamente
+    setHoveredInfo({ loading: true, data: null, x, y });
+
+    hoverTimeoutRef.current = setTimeout(async () => {
+      try {
+        const resp = await fetch(api(`/api/actividad-notas/historial?actividad_id=${actividadId}&dni=${dni}`));
+        const json = await resp.json();
+        if (resp.ok && json.ok) {
+           setHoveredInfo(prev => prev ? { ...prev, loading: false, data: json.data } : null);
+        } else {
+           setHoveredInfo(prev => prev ? { ...prev, loading: false, error: true } : null);
+        }
+      } catch (err) {
+        setHoveredInfo(prev => prev ? { ...prev, loading: false, error: true } : null);
+      }
+    }, 300); // Pequeño delay para evitar peticiones si pasa rápido el mouse
+  };
+
+  const handleMouseLeaveNota = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setHoveredInfo(null);
+  };
+
+  const formatDate = (ts) => {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <>
       <h1>Registro de Notas</h1>
@@ -315,7 +354,7 @@ export default function Boletas({ seleccion }) {
         </div>
         <div className="estudiantes-table" style={{ marginTop: 16 }}>
           <div className="table-scroll">
-            <div className={`scroll-area${actividades.length === 0 ? ' no-activities' : ''}`}>
+            <div className={`scroll-area${actividades.length === 0 ? ' no-activities' : ''}`} onScroll={() => setHoveredInfo(null)}>
               <table>
                 <thead>
                   <tr>
@@ -342,6 +381,8 @@ export default function Boletas({ seleccion }) {
                             className="nota-input"
                             disabled={Boolean(promLinks[act.id]) || esPromedioPorNombre(act.nombre)}
                             autoComplete="off"
+                            onMouseEnter={(e) => handleMouseEnterNota(e, act.id, a.dni)}
+                            onMouseLeave={handleMouseLeaveNota}
                             onKeyDown={e => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -456,6 +497,48 @@ export default function Boletas({ seleccion }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tooltip Historial */}
+      {hoveredInfo && (
+        <div className="history-tooltip" style={{ top: hoveredInfo.y, left: hoveredInfo.x }}>
+          <h4>Historial de Cambios</h4>
+          {hoveredInfo.loading ? (
+            <div style={{ padding: 10, textAlign: 'center', color: '#666' }}>Cargando...</div>
+          ) : !hoveredInfo.data ? (
+            <div style={{ padding: 10, textAlign: 'center', color: '#666' }}>Sin información</div>
+          ) : (
+            <>
+              <div className="meta-row">
+                <span>Nota Creada:</span>
+                <span>{formatDate(hoveredInfo.data.nota_created_at)}</span>
+              </div>
+              <div className="meta-row">
+                <span>Últ. Modificación:</span>
+                <span>{formatDate(hoveredInfo.data.nota_updated_at)}</span>
+              </div>
+              
+              <div className="history-list">
+                {hoveredInfo.data.historial && hoveredInfo.data.historial.length > 0 ? (
+                  hoveredInfo.data.historial.map((h, i) => (
+                    <div key={i} className="history-item">
+                       <span className="history-date">{formatDate(h.fecha)}</span>
+                       <span>
+                         <span className="history-val">{h.valor_anterior ?? '-'}</span>
+                         {' ➔ '}
+                         <span className="history-val">{h.valor_nuevo ?? '-'}</span>
+                       </span>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '8px 0', fontSize: '0.8rem', color: '#888', fontStyle: 'italic' }}>
+                    Sin cambios registrados
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </>

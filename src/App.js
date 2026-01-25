@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api';
-import './assets/css/login.css';
 import LoginAvanzado from './pages/LoginAvanzado';
 import DocenteHome from './Docente/DocenteHome';
 import AdminHome from './administrador/AdminHome';
 import AlumnosHome from './Alumnos/AlumnosHome';
-import logoDefault from './assets/images/logo.svg';
+import logoDefault from './assets/images/logo.png';
 
 function App() {
   const [route, setRoute] = useState(window.location.hash || '#/');
-  const [pathname, setPathname] = useState(window.location.pathname);
   const [valor, setValor] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,15 +20,7 @@ function App() {
     return () => window.removeEventListener('hashchange', handler);
   }, []);
 
-  useEffect(() => {
-    const pathHandler = () => setPathname(window.location.pathname);
-    window.addEventListener('popstate', pathHandler);
-    window.addEventListener('pushstate', pathHandler);
-    return () => {
-      window.removeEventListener('popstate', pathHandler);
-      window.removeEventListener('pushstate', pathHandler);
-    };
-  }, []);
+  
 
   useEffect(() => {
     try {
@@ -44,7 +34,7 @@ function App() {
 
   const validar = () => {
     const v = valor.trim();
-    if (v.toLowerCase() === 'admin') return '';
+    if (v.toLowerCase() === 'acceso') return '';
     if (!v) return 'Ingresa tu DNI';
     const soloDigitos = /^\d{8,}$/;
     if (!soloDigitos.test(v)) return 'El DNI debe tener al menos 8 dígitos';
@@ -54,7 +44,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const v = valor.trim();
-    if (v.toLowerCase() === 'admin') { setError(''); window.location.hash = '#/acceso'; return; }
+    if (v.toLowerCase() === 'acceso') { setError(''); window.location.hash = '#/acceso'; return; }
     const msg = validar();
     if (msg) { setError(msg); return; }
     setError('');
@@ -67,6 +57,7 @@ function App() {
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) { setError(data.error || 'DNI inválido'); return; }
+      try { localStorage.setItem('dni', valor.trim()); } catch {}
       window.location.hash = '#/alumnos';
     } catch (err) {
       console.error(err);
@@ -111,23 +102,12 @@ function App() {
     );
   }
 
-  // Si la ruta del navegador es /192.168.0.1, mostrar el login avanzado
-  // (pero las rutas con hash tienen prioridad y ya fueron evaluadas arriba)
-  if (pathname === '/192.168.0.1') {
-    const onSuccess = (to) => { window.location.hash = to; };
-    return (
-      <>
-        <LoginAvanzado onSuccess={onSuccess} />
-      </>
-    );
-  }
-
   return (
     <div className="login-wrapper">
       <form className="login-card" onSubmit={handleSubmit}>
         <h1>{welcomeTitle}</h1>
         <div style={{ display: 'grid', placeItems: 'center', margin: '12px 0' }}>
-          <img src={logoUrl} alt="Logo" style={{ maxWidth: '180px', height: 'auto' }} />
+          <img src={logoUrl} alt="Logo" style={{ maxWidth: '200px', height: 'auto', borderRadius:'100px',}} />
         </div>
         <p>Ingresa tu DNI</p>
 

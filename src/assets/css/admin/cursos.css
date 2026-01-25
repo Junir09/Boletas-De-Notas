@@ -1,0 +1,268 @@
+/****************************************************
+ * GESTIÓN DE CURSOS
+****************************************************/
+.cursos {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--color-fondo);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/****************************************************
+ * HEADER
+****************************************************/
+.cursos h2 {
+  margin: 0;
+  color: var(--color-principal);
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.cursos h3 {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-weight: 600;
+  font-size: 1.3rem;
+}
+
+.cursos > p {
+  margin: 6px 0 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/****************************************************
+ * FIELDS
+****************************************************/
+.cursos .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cursos .field label {
+  color: var(--color-text-label);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cursos .field input {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-card-bg);
+  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.cursos .field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+  background: #f9fbff;
+}
+
+.cursos .field input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/****************************************************
+ * ACTIONS
+****************************************************/
+.cursos .actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cursos .actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cursos button {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cursos button:hover {
+  background: var(--color-hover);
+  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+}
+
+.cursos button:active {
+  transform: scale(0.97);
+}
+
+.cursos button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/****************************************************
+ * DIVIDER
+****************************************************/
+.cursos .divider {
+  border: none;
+  border-top: 2px solid var(--color-border);
+  margin: 16px 0;
+}
+
+/****************************************************
+ * TABLE
+****************************************************/
+.cursos .table {
+  background: var(--color-card-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-weak);
+  border: 1px solid var(--color-border);
+}
+
+.cursos .table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cursos .table thead th {
+  text-align: left;
+  background: var(--color-fondo-alt);
+  color: var(--color-text-label);
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.cursos .table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.cursos .table tbody tr:hover {
+  background: var(--color-fondo-alt);
+  transition: background 0.15s ease;
+}
+
+.cursos .table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cursos .table tbody td input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-accent);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: #f9fbff;
+  box-shadow: var(--shadow-focus);
+}
+
+.cursos .table tbody td input:focus {
+  outline: none;
+  border-color: var(--color-accent-hover);
+}
+
+/****************************************************
+ * INLINE ACTIONS
+****************************************************/
+.cursos .inline-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cursos .inline-actions button {
+  background: var(--color-accent);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.cursos .inline-actions button:hover {
+  background: var(--color-accent-hover);
+}
+
+/****************************************************
+ * MODAL
+****************************************************/
+.cursos .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cursos .modal-card {
+  background: var(--color-card-bg);
+  padding: 28px 32px;
+  border-radius: 16px;
+  width: min(400px, 92%);
+  box-shadow: var(--shadow-strong);
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.cursos .modal-card h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.4rem;
+  color: var(--color-text-strong);
+}
+
+.cursos .modal-card p {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin: 8px 0;
+}
+
+.cursos .modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/****************************************************
+ * STATUS
+****************************************************/
+.cursos .status-error {
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--color-danger);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}

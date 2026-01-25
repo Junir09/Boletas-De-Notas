@@ -1,0 +1,465 @@
+/* ---------- CONTENEDOR GENERAL ---------- */
+.notas-form {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  margin-top: 24px;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- BOTONES ---------- */
+.notas-form button {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border: none;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+
+.notas-form button:hover {
+  background: var(--color-hover);
+  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+}
+
+.notas-form button:active {
+  transform: scale(0.97);
+}
+
+/* ---------- TABLA ---------- */
+.estudiantes-table {
+  background: var(--color-card-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-weak);
+  border: 1px solid var(--color-border);
+  margin-top: 24px;
+}
+
+/* Forzar desbordamiento real */
+.estudiantes-table table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.estudiantes-table thead th {
+  text-align: left;
+  background: var(--color-fondo-alt);
+  color: var(--color-text-label);
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.estudiantes-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.estudiantes-table tbody tr:hover {
+  background: var(--color-fondo-alt);
+  transition: background 0.15s ease;
+}
+
+.estudiantes-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.estudiantes-table th, 
+.estudiantes-table td {
+  white-space: nowrap;
+}
+
+/* ---------- SCROLL HORIZONTAL ---------- */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;     /* ✔ ACTIVADO */
+  overflow-y: hidden;
+}
+
+.scroll-area {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-height: thin;
+}
+
+/* Cuando no hay actividades, la tabla debe ocupar todo el ancho y la última columna crecer */
+.scroll-area.no-activities table { width: 100% !important; }
+.scroll-area.no-activities .sticky-col-3 { width: auto; }
+
+
+.scroll-area table {
+  min-width: max-content;
+}
+
+/* ---------- COLUMNAS STICKY ---------- */
+.sticky-col {
+  position: sticky;
+  background: var(--color-card-bg);
+  z-index: 2;
+  border-right: 1px solid var(--color-border);
+}
+
+.sticky-col-1 { left: 0; min-width: 140px; width: 140px; }
+.sticky-col-2 { left: 140px; min-width: 180px; width: 180px; }
+.sticky-col-3 { left: 320px; min-width: 180px; width: 180px; }
+
+.estudiantes-table thead th.sticky-col {
+  z-index: 3;
+}
+
+/* ---------- SLIDER ---------- */
+/* Eliminado */
+
+/* ---------- INPUT NOTA ---------- */
+.nota-input {
+  width: 80px; /* Reducido para mejor estética */
+  text-align: center; /* Centrado */
+  max-width: 100%;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-card-bg);
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.nota-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.nota-input:disabled {
+  background: var(--color-fondo-alt);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+/* =====================================================
+   MEJORAS VISUALES – BOLETAS (SIN ESTILOS GENERALES)
+   ===================================================== */
+
+/* ---------- SELECT ACTIVIDADES ---------- */
+.notas-form select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.notas-form select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- BOTONES DE SCROLL (ELIMINADOS) ---------- */
+/* .scroll-controls button eliminados */
+
+/* ---------- SLIDER HORIZONTAL (ELIMINADO) ---------- */
+/* estilos eliminados */
+
+/* ---------- FILA "SIN ALUMNOS" ---------- */
+.estudiantes-table tbody tr td[colspan] {
+  text-align: center;
+  padding: 32px 20px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  background: var(--color-fondo-alt);
+}
+
+/* ---------- HEADER DE TABLA (MEJOR JERARQUÍA) ---------- */
+.estudiantes-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+/* ---------- INPUT NOTA – ESTADO PROMEDIO ---------- */
+.nota-input:disabled {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-fondo-alt),
+    var(--color-fondo-alt) 10px,
+    #f8fafc 10px,
+    #f8fafc 20px
+  );
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* ---------- MODAL – INPUT TEXTO ---------- */
+.modal-body input[type="text"] {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 320px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.modal-body input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- CHECKBOXES PROMEDIO ---------- */
+.activities-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-fondo-alt);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.activity-item:hover {
+  background: #e2e8f0;
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.activity-item input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.activity-item span {
+  font-weight: 500;
+}
+
+/* ---------- LABELS GENERICOS (OLD) ---------- */
+.modal-body label:not(.activity-item) {
+  /* Mantener estilos solo para otros labels si existen */
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--color-text-label);
+}
+
+/* ---------- BOTONES MODAL ---------- */
+.modal-body button {
+  background: var(--color-principal);
+  color: var(--color-white);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+
+.modal-body button:hover {
+  background: var(--color-hover);
+  box-shadow: 0 4px 14px rgba(16, 40, 68, 0.25);
+}
+
+/* ---------- MICRO-ANIMACIÓN INPUT NOTA ---------- */
+.nota-input {
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+
+.nota-input:focus {
+  transform: scale(1.03);
+}
+
+/* ---------- MODAL OVERLAY ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalFade 0.25s ease;
+}
+
+/* ---------- MODAL CARD ---------- */
+.modal-card {
+  background: var(--color-card-bg);
+  border-radius: 18px;
+  width: min(500px, 96vw); /* Ancho más pequeño para alertas */
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+  animation: modalUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- HISTORY TOOLTIP ---------- */
+.history-tooltip {
+  position: fixed;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 12px;
+  z-index: 2000;
+  width: 280px;
+  pointer-events: none; /* Allows hovering input without tooltip interfering */
+  animation: tooltipFade 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.history-tooltip h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: var(--color-principal);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 4px;
+}
+
+.history-tooltip .meta-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.history-tooltip .history-list {
+  margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 4px;
+}
+
+.history-tooltip .history-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.history-tooltip .history-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.history-tooltip .history-date {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.history-tooltip .history-val {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-card.wide {
+  width: min(900px, 96vw); /* Ancho normal para contenido grande */
+}
+
+/* ---------- MODAL HEADER ---------- */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(
+    180deg,
+    var(--color-fondo-alt),
+    var(--color-card-bg)
+  );
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-principal);
+}
+
+.modal-header .close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-border);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-header .close:hover {
+  background: var(--color-danger);
+  color: var(--color-white);
+  border-color: var(--color-danger);
+  transform: scale(1.05);
+}
+
+/* ---------- MODAL BODY ---------- */
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ---------- ANIMACIONES ---------- */
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

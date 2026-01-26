@@ -1,219 +1,96 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const { pool } = require('./db');
 
 const app = express();
 app.use(cors({ origin: '*'}));
 app.use(express.json());
 
-// Test de conexión al inicio
-(async () => {
+async function ensureSchema() {
   try {
-    const conn = await pool.getConnection();
-    console.log('✅ Conexión a BD exitosa');
-    conn.release();
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS cursos (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nombre VARCHAR(120) NOT NULL, descripcion VARCHAR(255) NULL, PRIMARY KEY (id), UNIQUE KEY uniq_cursos_nombre (nombre)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS docente_curso (id INT UNSIGNED NOT NULL AUTO_INCREMENT, dni VARCHAR(20) NOT NULL, curso_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_docente_curso (dni, curso_id), KEY idx_docente_curso_dni (dni), KEY idx_docente_curso_curso (curso_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    try {
+      const [idx] = await pool.query('SELECT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "docente_curso" AND INDEX_NAME = "uniq_curso_unico"');
+      if (idx && idx.length > 0) {
+        await pool.query('ALTER TABLE docente_curso DROP INDEX uniq_curso_unico');
+      }
+    } catch (_) {}
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS curso_grado (id INT UNSIGNED NOT NULL AUTO_INCREMENT, curso_id INT UNSIGNED NOT NULL, grado_id INT UNSIGNED NOT NULL, seccion_id INT UNSIGNED NULL, PRIMARY KEY (id), UNIQUE KEY uniq_curso_grado_seccion (curso_id, grado_id, seccion_id), KEY idx_curso_grado_curso (curso_id), KEY idx_curso_grado_grado (grado_id), KEY idx_curso_grado_seccion (seccion_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS promedio_detalle (id INT UNSIGNED NOT NULL AUTO_INCREMENT, promedio_id INT UNSIGNED NOT NULL, actividad_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_promedio_detalle (promedio_id, actividad_id), KEY idx_promedio_detalle_promedio (promedio_id), KEY idx_promedio_detalle_actividad (actividad_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
   } catch (e) {
-    console.error('❌ Error fatal al conectar a BD:', e);
+    console.error('Schema error:', e.message);
   }
-})();
+}
 
-// Servir archivos estáticos del frontend (React)
-app.use(express.static(path.join(__dirname, '../build')));
+ensureSchema();
 
-async function initDB() {
+async function ensureEstudianteGrado() {
   try {
-    console.log('🔄 Iniciando verificación de base de datos...');
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "estudiantes" AND COLUMN_NAME = "grado"'
+    );
+    if ((rows[0] && rows[0].cnt) === 0) {
+      await pool.query('ALTER TABLE estudiantes ADD COLUMN grado TINYINT UNSIGNED NULL');
+    }
+    const [rows2] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "estudiantes" AND COLUMN_NAME = "seccion"'
+    );
+    if ((rows2[0] && rows2[0].cnt) === 0) {
+      await pool.query('ALTER TABLE estudiantes ADD COLUMN seccion VARCHAR(10) NULL');
+    }
+  } catch (e) {
+    console.error('Ensure grado/seccion error:', e.message);
+  }
+}
+ensureEstudianteGrado();
 
-    // 1. Tablas base (sin dependencias)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS grados (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        nombre VARCHAR(50) NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_grados_nombre (nombre)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS secciones (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        nombre VARCHAR(10) NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_secciones_nombre (nombre)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS cursos (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        nombre VARCHAR(120) NOT NULL,
-        descripcion VARCHAR(255) NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_cursos_nombre (nombre)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS docente (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        dni VARCHAR(20) NOT NULL,
-        nombre VARCHAR(100) NOT NULL,
-        descripcion VARCHAR(255) NULL,
-        password VARCHAR(255) NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_docente_dni (dni)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // 2. Tablas con dependencias simples
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS estudiantes (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        dni VARCHAR(20) NOT NULL,
-        apellidos VARCHAR(150) NOT NULL,
-        nombres VARCHAR(150) NOT NULL,
-        grado TINYINT UNSIGNED NULL,
-        seccion VARCHAR(10) NULL,
-        grado_id INT UNSIGNED NULL,
-        seccion_id INT UNSIGNED NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_estudiantes_dni (dni),
-        KEY idx_estudiantes_grado_id (grado_id),
-        KEY idx_estudiantes_seccion_id (seccion_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS docente_curso (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        dni VARCHAR(20) NOT NULL,
-        curso_id INT UNSIGNED NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_docente_curso (dni, curso_id),
-        KEY idx_docente_curso_dni (dni),
-        KEY idx_docente_curso_curso (curso_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS curso_grado (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        curso_id INT UNSIGNED NOT NULL,
-        grado_id INT UNSIGNED NOT NULL,
-        seccion_id INT UNSIGNED NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_curso_grado_seccion (curso_id, grado_id, seccion_id),
-        KEY idx_curso_grado_curso (curso_id),
-        KEY idx_curso_grado_grado (grado_id),
-        KEY idx_curso_grado_seccion (seccion_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // 3. Tablas de actividades y notas
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS curso_actividad (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        curso_id INT UNSIGNED NOT NULL,
-        grado_id INT UNSIGNED NOT NULL,
-        seccion_id INT UNSIGNED NULL,
-        nombre VARCHAR(120) NOT NULL,
-        orden INT UNSIGNED NOT NULL DEFAULT 1,
-        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        KEY idx_ca_curso (curso_id),
-        KEY idx_ca_grado (grado_id),
-        KEY idx_ca_seccion (seccion_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS actividad_nota (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        actividad_id INT UNSIGNED NOT NULL,
-        estudiante_dni VARCHAR(20) NOT NULL,
-        nota DECIMAL(5,2) NULL,
-        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_act_est (actividad_id, estudiante_dni),
-        KEY idx_an_actividad (actividad_id),
-        KEY idx_an_estudiante (estudiante_dni)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS promedio_detalle (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        promedio_id INT UNSIGNED NOT NULL,
-        actividad_id INT UNSIGNED NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_promedio_detalle (promedio_id, actividad_id),
-        KEY idx_promedio_detalle_promedio (promedio_id),
-        KEY idx_promedio_detalle_actividad (actividad_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS nota_historial (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        nota_id INT UNSIGNED NOT NULL,
-        valor_anterior DECIMAL(5,2) NULL,
-        valor_nuevo DECIMAL(5,2) NULL,
-        fecha TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        KEY idx_nh_nota (nota_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // 4. Datos iniciales básicos (si están vacíos)
+async function ensureGradosYSecciones() {
+  try {
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS grados (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nombre VARCHAR(50) NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_grados_nombre (nombre)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS secciones (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nombre VARCHAR(10) NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_secciones_nombre (nombre)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    const [hasNumeroCol] = await pool.query('SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "grados" AND COLUMN_NAME = "numero"');
+    if ((hasNumeroCol[0] && hasNumeroCol[0].cnt) > 0) {
+      try { await pool.query('ALTER TABLE grados DROP COLUMN numero'); } catch (_) {}
+    }
     const [grados] = await pool.query('SELECT COUNT(*) AS cnt FROM grados');
     if ((grados[0] && grados[0].cnt) === 0) {
       await pool.query('INSERT INTO grados (nombre) VALUES ("1°"), ("2°"), ("3°"), ("4°"), ("5°"), ("6°")');
-      console.log('✅ Grados insertados');
     }
     const [secciones] = await pool.query('SELECT COUNT(*) AS cnt FROM secciones');
     if ((secciones[0] && secciones[0].cnt) === 0) {
       await pool.query('INSERT INTO secciones (nombre) VALUES ("A"), ("B"), ("C")');
-      console.log('✅ Secciones insertadas');
     }
-
-    console.log('✅ Estructura de base de datos verificada/creada correctamente');
-
-    await seedData();
-
   } catch (e) {
-    console.error('❌ Error fatal inicializando base de datos:', e);
+    console.error('Ensure grados/secciones error:', e.message);
   }
 }
+ensureGradosYSecciones();
 
-async function seedData() {
+async function ensureEstudiantesFK() {
   try {
-    console.log('🔄 Verificando datos iniciales...');
-    
-    // Cursos
-    await pool.query(`INSERT IGNORE INTO cursos (nombre, descripcion) VALUES ('Matemática', NULL), ('Comunicación', NULL), ('Ciencias', NULL)`);
-    
-    // Docentes
-    await pool.query(`INSERT IGNORE INTO docente (dni, nombre, descripcion, password) VALUES 
-      ('12345678', 'Juan Pérez', NULL, '654321'),
-      ('87654321', 'María López', NULL, '123456')`);
-      
-    // Docente Curso
-    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '12345678', c.id FROM cursos c WHERE c.nombre = 'Matemática'`);
-    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '87654321', c.id FROM cursos c WHERE c.nombre = 'Comunicación'`);
-    
-    // Estudiantes
-    await pool.query(`INSERT IGNORE INTO estudiantes (dni, apellidos, nombres, grado, seccion) VALUES
-      ('15837237', 'Castro García', 'Sofía', 1, 'A'),
-      ('34871792', 'Castro López', 'Luis', 1, 'A'),
-      ('21178702', 'Díaz Rojas', 'Andrea', 1, 'A'),
-      ('51526326', 'Flores Mendoza', 'Carlos', 1, 'A'),
-      ('60859754', 'Flores Salazar', 'Mariana', 1, 'A'),
-      ('29052448', 'Flores Pérez', 'Jorge', 1, 'A')
-      ON DUPLICATE KEY UPDATE apellidos=VALUES(apellidos), nombres=VALUES(nombres), grado=VALUES(grado), seccion=VALUES(seccion)`);
-      
-    // Vincular estudiantes con IDs de grado/seccion
+    const [hasGradoId] = await pool.query('SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "estudiantes" AND COLUMN_NAME = "grado_id"');
+    if ((hasGradoId[0] && hasGradoId[0].cnt) === 0) {
+      await pool.query('ALTER TABLE estudiantes ADD COLUMN grado_id INT UNSIGNED NULL');
+      await pool.query('CREATE INDEX idx_estudiantes_grado_id ON estudiantes (grado_id)');
+    }
+    const [hasSeccionId] = await pool.query('SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "estudiantes" AND COLUMN_NAME = "seccion_id"');
+    if ((hasSeccionId[0] && hasSeccionId[0].cnt) === 0) {
+      await pool.query('ALTER TABLE estudiantes ADD COLUMN seccion_id INT UNSIGNED NULL');
+      await pool.query('CREATE INDEX idx_estudiantes_seccion_id ON estudiantes (seccion_id)');
+    }
     await pool.query(`
       UPDATE estudiantes e
       JOIN grados g ON CAST(SUBSTRING_INDEX(g.nombre, '°', 1) AS UNSIGNED) = e.grado
@@ -224,42 +101,35 @@ async function seedData() {
       JOIN secciones s ON s.nombre = e.seccion
       SET e.seccion_id = s.id
       WHERE e.seccion IS NOT NULL AND e.seccion_id IS NULL`);
-
-    // Curso Grado
-    await pool.query(`INSERT IGNORE INTO curso_grado (curso_id, grado_id, seccion_id)
-      SELECT c.id, g.id, s.id FROM cursos c JOIN grados g ON g.nombre = '1°' JOIN secciones s ON s.nombre = 'A' WHERE c.nombre = 'Matemática'`);
-
-    // Actividades
-    const actividades = ['Práctica', 'Tarea', 'Examen', 'Unidad 1'];
-    for (let i = 0; i < actividades.length; i++) {
-      const nombre = actividades[i];
-      await pool.query(`INSERT INTO curso_actividad (curso_id, grado_id, seccion_id, nombre, orden)
-        SELECT c.id, g.id, s.id, ?, ? FROM cursos c JOIN grados g ON g.nombre='1°' JOIN secciones s ON s.nombre='A' WHERE c.nombre='Matemática' AND NOT EXISTS(
-          SELECT 1 FROM curso_actividad ca WHERE ca.curso_id=c.id AND ca.grado_id=g.id AND ca.seccion_id=s.id AND ca.nombre=?
-        )`, [nombre, i + 1, nombre]);
-    }
-
-    // Notas (Ejemplo simplificado)
-    await pool.query(`INSERT IGNORE INTO actividad_nota (actividad_id, estudiante_dni, nota)
-      SELECT ca.id, '15837237', 20.00 FROM curso_actividad ca JOIN cursos c ON c.id = ca.curso_id JOIN grados g ON g.id = ca.grado_id JOIN secciones s ON s.id = ca.seccion_id WHERE c.nombre='Matemática' AND g.nombre='1°' AND s.nombre='A' AND ca.nombre='Práctica'`);
-
-    console.log('✅ Datos de prueba cargados correctamente');
   } catch (e) {
-    console.error('⚠️ Error cargando datos de prueba (puede que ya existan):', e);
+    console.error('Ensure estudiantes FK error:', e.message);
   }
 }
+ensureEstudiantesFK();
 
-initDB();
+async function ensureActividades() {
+  try {
+    await pool.query('CREATE TABLE IF NOT EXISTS curso_actividad (id INT UNSIGNED NOT NULL AUTO_INCREMENT, curso_id INT UNSIGNED NOT NULL, grado_id INT UNSIGNED NOT NULL, seccion_id INT UNSIGNED NULL, nombre VARCHAR(120) NOT NULL, orden INT UNSIGNED NOT NULL DEFAULT 1, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), KEY idx_ca_curso (curso_id), KEY idx_ca_grado (grado_id), KEY idx_ca_seccion (seccion_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    await pool.query('CREATE TABLE IF NOT EXISTS actividad_nota (id INT UNSIGNED NOT NULL AUTO_INCREMENT, actividad_id INT UNSIGNED NOT NULL, estudiante_dni VARCHAR(20) NOT NULL, nota DECIMAL(5,2) NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY uniq_act_est (actividad_id, estudiante_dni), KEY idx_an_actividad (actividad_id), KEY idx_an_estudiante (estudiante_dni)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    await pool.query('CREATE TABLE IF NOT EXISTS nota_historial (id INT UNSIGNED NOT NULL AUTO_INCREMENT, nota_id INT UNSIGNED NOT NULL, valor_anterior DECIMAL(5,2) NULL, valor_nuevo DECIMAL(5,2) NULL, fecha TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), KEY idx_nh_nota (nota_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    
+    // Migraciones para columnas faltantes
+    try {
+      const [cols] = await pool.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "actividad_nota" AND COLUMN_NAME = "created_at"');
+      if (cols.length === 0) {
+        await pool.query('ALTER TABLE actividad_nota ADD COLUMN created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP');
+        await pool.query('ALTER TABLE actividad_nota ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+      }
+    } catch (_) {}
+  } catch (e) {
+    console.error('Ensure actividades error:', e.message);
+  }
+}
+ensureActividades();
 
-// Healthcheck API (movido de raíz)
-app.get('/api/health', (req, res) => {
+// Healthcheck
+app.get('/', (req, res) => {
   res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
-});
-
-// Servir frontend para cualquier ruta no manejada por API
-app.get(/(.*)/, (req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 
 // Docentes

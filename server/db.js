@@ -3,36 +3,12 @@
 
 const mysql = require('mysql2/promise');
 
-const DB_HOST = process.env.DB_HOST || 'localhost';
-const DB_USER = process.env.DB_USER || 'root';
-const DB_PASSWORD = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || 'test';
-
-// Detectar si es TiDB para usar puerto 4000 por defecto
-const isTiDB = DB_HOST.includes('tidbcloud');
-const defaultPort = isTiDB ? 4000 : 3306;
-const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : defaultPort;
-
-console.log('--- Configuración de Base de Datos ---');
-console.log('DB_HOST:', `'${DB_HOST}'`);
-console.log('DB_USER:', `'${DB_USER}'`);
-console.log('DB_NAME:', `'${DB_NAME}'`);
-console.log('DB_PORT:', DB_PORT);
-console.log('DB_SSL:', process.env.DB_SSL);
-console.log('Es TiDB:', isTiDB);
-console.log('Password Length:', DB_PASSWORD ? DB_PASSWORD.length : 0);
-console.log('--------------------------------------');
-
-// TiDB requiere SSL seguro. Si estamos conectando a TiDB, forzamos SSL.
-const useSSL = process.env.DB_SSL === 'true' || isTiDB;
-
 const pool = mysql.createPool({
-  host: DB_HOST,
-  user: DB_USER,
-  password: DB_PASSWORD,
-  database: DB_NAME,
-  port: DB_PORT,
-  ssl: useSSL ? { rejectUnauthorized: false } : undefined,
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '', // por defecto en XAMPP es vacío
+  database: process.env.DB_NAME || 'Boletas',
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

@@ -13,7 +13,7 @@ services:
       - key: DB_USER
         value: 3sMXNNzjuA9pm7j.root
       - key: DB_PASSWORD
-        value: 
+        value: TskyB0J7N8MEtg8f
       - key: DB_NAME
         value: test
       - key: DB_PORT

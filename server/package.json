@@ -17,5 +17,8 @@
     "mysql"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
+  }
 }

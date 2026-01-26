@@ -6,7 +6,7 @@ const mysql = require('mysql2/promise');
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || 'test';
+const DB_NAME = process.env.DB_NAME || 'Boletas';
 
 // Detectar si es TiDB para usar puerto 4000 por defecto
 const isTiDB = DB_HOST.includes('tidbcloud');

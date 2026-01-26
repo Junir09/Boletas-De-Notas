@@ -7,6 +7,17 @@ const app = express();
 app.use(cors({ origin: '*'}));
 app.use(express.json());
 
+// Test de conexión al inicio
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    console.log('✅ Conexión a BD exitosa');
+    conn.release();
+  } catch (e) {
+    console.error('❌ Error fatal al conectar a BD:', e);
+  }
+})();
+
 // Servir archivos estáticos del frontend (React)
 app.use(express.static(path.join(__dirname, '../build')));
 
@@ -31,7 +42,7 @@ async function ensureSchema() {
       'CREATE TABLE IF NOT EXISTS promedio_detalle (id INT UNSIGNED NOT NULL AUTO_INCREMENT, promedio_id INT UNSIGNED NOT NULL, actividad_id INT UNSIGNED NOT NULL, PRIMARY KEY (id), UNIQUE KEY uniq_promedio_detalle (promedio_id, actividad_id), KEY idx_promedio_detalle_promedio (promedio_id), KEY idx_promedio_detalle_actividad (actividad_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
   } catch (e) {
-    console.error('Schema error:', e.message);
+    console.error('Schema error:', e);
   }
 }
 
@@ -52,7 +63,7 @@ async function ensureEstudianteGrado() {
       await pool.query('ALTER TABLE estudiantes ADD COLUMN seccion VARCHAR(10) NULL');
     }
   } catch (e) {
-    console.error('Ensure grado/seccion error:', e.message);
+    console.error('Ensure grado/seccion error:', e);
   }
 }
 ensureEstudianteGrado();
@@ -78,7 +89,7 @@ async function ensureGradosYSecciones() {
       await pool.query('INSERT INTO secciones (nombre) VALUES ("A"), ("B"), ("C")');
     }
   } catch (e) {
-    console.error('Ensure grados/secciones error:', e.message);
+    console.error('Ensure grados/secciones error:', e);
   }
 }
 ensureGradosYSecciones();
@@ -106,7 +117,7 @@ async function ensureEstudiantesFK() {
       SET e.seccion_id = s.id
       WHERE e.seccion IS NOT NULL AND e.seccion_id IS NULL`);
   } catch (e) {
-    console.error('Ensure estudiantes FK error:', e.message);
+    console.error('Ensure estudiantes FK error:', e);
   }
 }
 ensureEstudiantesFK();
@@ -126,7 +137,7 @@ async function ensureActividades() {
       }
     } catch (_) {}
   } catch (e) {
-    console.error('Ensure actividades error:', e.message);
+    console.error('Ensure actividades error:', e);
   }
 }
 ensureActividades();

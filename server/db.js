@@ -8,7 +8,8 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || '3sMXNNzjuA9pm7j.root',
   password: process.env.DB_PASSWORD || '', // por defecto en XAMPP es vacío
   database: process.env.DB_NAME || 'test',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

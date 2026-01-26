@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import LoginAvanzado from './pages/LoginAvanzado';
 import DocenteHome from './Docente/DocenteHome';
@@ -6,21 +7,13 @@ import AdminHome from './administrador/AdminHome';
 import AlumnosHome from './Alumnos/AlumnosHome';
 import logoDefault from './assets/images/logo.png';
 
-function App() {
-  const [route, setRoute] = useState(window.location.hash || '#/');
+function Login() {
+  const navigate = useNavigate();
   const [valor, setValor] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [welcomeTitle, setWelcomeTitle] = useState('Bienvenidos Al Sistema de Boletas De Notas');
   const [logoUrl, setLogoUrl] = useState(logoDefault);
-
-  useEffect(() => {
-    const handler = () => setRoute(window.location.hash || '#/');
-    window.addEventListener('hashchange', handler);
-    return () => window.removeEventListener('hashchange', handler);
-  }, []);
-
-  
 
   useEffect(() => {
     try {
@@ -44,7 +37,11 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const v = valor.trim();
-    if (v.toLowerCase() === 'acceso') { setError(''); window.location.hash = '#/acceso'; return; }
+    if (v.toLowerCase() === 'acceso') { 
+      setError(''); 
+      navigate('/acceso'); 
+      return; 
+    }
     const msg = validar();
     if (msg) { setError(msg); return; }
     setError('');
@@ -58,7 +55,7 @@ function App() {
       const data = await resp.json();
       if (!resp.ok || !data.ok) { setError(data.error || 'DNI inválido'); return; }
       try { localStorage.setItem('dni', valor.trim()); } catch {}
-      window.location.hash = '#/alumnos';
+      navigate('/alumnos');
     } catch (err) {
       console.error(err);
       setError('No se pudo conectar al servidor');
@@ -66,41 +63,6 @@ function App() {
       setLoading(false);
     }
   };
-
-  // Navegación oculta: se retiraron los botones de login
-
-  if (route.startsWith('#/docente')) {
-    return (
-      <>
-        <DocenteHome />
-      </>
-    );
-  }
-
-  if (route.startsWith('#/administrador')) {
-    return (
-      <>
-        <AdminHome />
-      </>
-    );
-  }
-
-  if (route.startsWith('#/alumnos')) {
-    return (
-      <>
-        <AlumnosHome />
-      </>
-    );
-  }
-
-  if (route.startsWith('#/acceso')) {
-    const onSuccess = (to) => { window.location.hash = to; };
-    return (
-      <>
-        <LoginAvanzado onSuccess={onSuccess} />
-      </>
-    );
-  }
 
   return (
     <div className="login-wrapper">
@@ -111,23 +73,17 @@ function App() {
         </div>
         <p>Ingresa tu DNI</p>
 
-        
-
-      
-
-      <div className="field">
-        <label>DNI</label>
-        <input
-          type="text"
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-          placeholder={'Ingresa tu DNI'}
-          inputMode={'numeric'}
-          maxLength={8}
-        />
-      </div>
-
-      
+        <div className="field">
+          <label>DNI</label>
+          <input
+            type="text"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            placeholder={'Ingresa tu DNI'}
+            inputMode={'numeric'}
+            maxLength={8}
+          />
+        </div>
 
         {error && <div className="error">{error}</div>}
 
@@ -136,6 +92,18 @@ function App() {
         </div>
       </form>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/docente/*" element={<DocenteHome />} />
+      <Route path="/administrador/*" element={<AdminHome />} />
+      <Route path="/alumnos/*" element={<AlumnosHome />} />
+      <Route path="/acceso" element={<LoginAvanzado />} />
+    </Routes>
   );
 }
 

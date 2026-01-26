@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import '../assets/css/login.css';
 import { Eye, EyeOff } from 'lucide-react';
 
 function LoginAvanzado({ onSuccess }) {
+  const navigate = useNavigate();
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const esSoloDigitos = (v) => /^\d+$/.test(v);
+
+  const handleSuccess = (path) => {
+    if (onSuccess) {
+      onSuccess(path);
+    } else {
+      navigate(path);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +35,7 @@ function LoginAvanzado({ onSuccess }) {
     const adminPassword = String(cfg.adminPassword || 'superuser');
     if (u === adminUser && p === adminPassword) {
       setError('');
-      onSuccess('#/administrador');
+      handleSuccess('/administrador');
       return;
     }
 
@@ -42,7 +52,7 @@ function LoginAvanzado({ onSuccess }) {
         if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
         setError('');
         try { localStorage.setItem('dni', u); } catch {}
-        onSuccess('#/docente');
+        handleSuccess('/docente');
       } catch (err) {
         console.error(err);
         setError('No se pudo conectar al servidor');

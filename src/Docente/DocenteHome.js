@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, FileText, BarChart3, LogOut } from 'lucide-react';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/docente/docentehome.css';
@@ -8,6 +9,7 @@ import Boletas from './Boletas';
 import Reportes from './Reportes';
 
 function DocenteHome() {
+  const navigate = useNavigate();
   const [vista, setVista] = useState('cursos');
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ function DocenteHome() {
 
   const cerrarSesion = () => {
     localStorage.removeItem('dni');
-    window.location.hash = '/acceso';
+    navigate('/acceso');
   };
 
   return (

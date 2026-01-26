@@ -69,6 +69,7 @@ function DocenteHome() {
 
   const cerrarSesion = () => {
     localStorage.removeItem('dni');
+    localStorage.removeItem('role');
     window.location.hash = '/acceso';
   };
 

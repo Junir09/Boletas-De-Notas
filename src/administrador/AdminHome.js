@@ -14,7 +14,10 @@ function AdminHome() {
   const [vista, setVista] = useState('inicio');
 
   const ir = (v) => setVista(v);
-  const cerrarSesion = () => { window.location.hash = '/acceso'; };
+  const cerrarSesion = () => { 
+    localStorage.removeItem('role');
+    window.location.hash = '/acceso'; 
+  };
 
   return (
     <div className="layout">

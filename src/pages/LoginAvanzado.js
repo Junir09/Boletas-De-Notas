@@ -25,6 +25,7 @@ function LoginAvanzado({ onSuccess }) {
     const adminPassword = String(cfg.adminPassword || 'superuser');
     if (u === adminUser && p === adminPassword) {
       setError('');
+      localStorage.setItem('role', 'admin');
       onSuccess('#/administrador');
       return;
     }
@@ -41,7 +42,10 @@ function LoginAvanzado({ onSuccess }) {
         const data = await resp.json();
         if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
         setError('');
-        try { localStorage.setItem('dni', u); } catch {}
+        try { 
+          localStorage.setItem('dni', u); 
+          localStorage.setItem('role', 'docente');
+        } catch {}
         onSuccess('#/docente');
       } catch (err) {
         console.error(err);

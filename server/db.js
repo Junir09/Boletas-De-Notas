@@ -9,6 +9,10 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || '', // por defecto en XAMPP es vacío
   database: process.env.DB_NAME || 'Boletas',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  ssl: process.env.DB_SSL === 'true' ? {
+      minVersion: 'TLSv1.2',
+      rejectUnauthorized: true
+  } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

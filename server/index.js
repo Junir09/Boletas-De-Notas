@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { pool } = require('./db');
 
 const app = express();
@@ -1149,11 +1150,6 @@ app.post('/api/login/alumno', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`API escuchando en http://localhost:${PORT}`);
-});
-
 // Promover grado (+1, máx 6)
 app.post('/api/estudiantes/grados/promover', async (req, res) => {
   const { dnis } = req.body || {};
@@ -1423,4 +1419,16 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+// Servir archivos estáticos del frontend (React)
+app.use(express.static(path.join(__dirname, '../build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Servidor iniciado en puerto ${PORT}`);
 });

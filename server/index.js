@@ -1,10 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { pool } = require('./db');
 
 const app = express();
 app.use(cors({ origin: '*'}));
 app.use(express.json());
+
+// Servir archivos estáticos del frontend (React)
+app.use(express.static(path.join(__dirname, '../build')));
 
 async function ensureSchema() {
   try {
@@ -127,9 +131,15 @@ async function ensureActividades() {
 }
 ensureActividades();
 
-// Healthcheck
-app.get('/', (req, res) => {
+// Healthcheck API (movido de raíz)
+app.get('/api/health', (req, res) => {
   res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
+});
+
+// Servir frontend para cualquier ruta no manejada por API
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 
 // Docentes

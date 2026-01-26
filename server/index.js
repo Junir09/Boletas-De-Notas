@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 const { pool } = require('./db');
 
 const app = express();
@@ -181,8 +180,72 @@ async function initDB() {
 
     console.log('✅ Estructura de base de datos verificada/creada correctamente');
 
+    await seedData();
+
   } catch (e) {
     console.error('❌ Error fatal inicializando base de datos:', e);
+  }
+}
+
+async function seedData() {
+  try {
+    console.log('🔄 Verificando datos iniciales...');
+    
+    // Cursos
+    await pool.query(`INSERT IGNORE INTO cursos (nombre, descripcion) VALUES ('Matemática', NULL), ('Comunicación', NULL), ('Ciencias', NULL)`);
+    
+    // Docentes
+    await pool.query(`INSERT IGNORE INTO docente (dni, nombre, descripcion, password) VALUES 
+      ('12345678', 'Juan Pérez', NULL, '654321'),
+      ('87654321', 'María López', NULL, '123456')`);
+      
+    // Docente Curso
+    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '12345678', c.id FROM cursos c WHERE c.nombre = 'Matemática'`);
+    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '87654321', c.id FROM cursos c WHERE c.nombre = 'Comunicación'`);
+    
+    // Estudiantes
+    await pool.query(`INSERT IGNORE INTO estudiantes (dni, apellidos, nombres, grado, seccion) VALUES
+      ('15837237', 'Castro García', 'Sofía', 1, 'A'),
+      ('34871792', 'Castro López', 'Luis', 1, 'A'),
+      ('21178702', 'Díaz Rojas', 'Andrea', 1, 'A'),
+      ('51526326', 'Flores Mendoza', 'Carlos', 1, 'A'),
+      ('60859754', 'Flores Salazar', 'Mariana', 1, 'A'),
+      ('29052448', 'Flores Pérez', 'Jorge', 1, 'A')
+      ON DUPLICATE KEY UPDATE apellidos=VALUES(apellidos), nombres=VALUES(nombres), grado=VALUES(grado), seccion=VALUES(seccion)`);
+      
+    // Vincular estudiantes con IDs de grado/seccion
+    await pool.query(`
+      UPDATE estudiantes e
+      JOIN grados g ON CAST(SUBSTRING_INDEX(g.nombre, '°', 1) AS UNSIGNED) = e.grado
+      SET e.grado_id = g.id
+      WHERE e.grado IS NOT NULL AND e.grado_id IS NULL`);
+    await pool.query(`
+      UPDATE estudiantes e
+      JOIN secciones s ON s.nombre = e.seccion
+      SET e.seccion_id = s.id
+      WHERE e.seccion IS NOT NULL AND e.seccion_id IS NULL`);
+
+    // Curso Grado
+    await pool.query(`INSERT IGNORE INTO curso_grado (curso_id, grado_id, seccion_id)
+      SELECT c.id, g.id, s.id FROM cursos c JOIN grados g ON g.nombre = '1°' JOIN secciones s ON s.nombre = 'A' WHERE c.nombre = 'Matemática'`);
+
+    // Actividades
+    const actividades = ['Práctica', 'Tarea', 'Examen', 'Unidad 1'];
+    for (let i = 0; i < actividades.length; i++) {
+      const nombre = actividades[i];
+      await pool.query(`INSERT INTO curso_actividad (curso_id, grado_id, seccion_id, nombre, orden)
+        SELECT c.id, g.id, s.id, ?, ? FROM cursos c JOIN grados g ON g.nombre='1°' JOIN secciones s ON s.nombre='A' WHERE c.nombre='Matemática' AND NOT EXISTS(
+          SELECT 1 FROM curso_actividad ca WHERE ca.curso_id=c.id AND ca.grado_id=g.id AND ca.seccion_id=s.id AND ca.nombre=?
+        )`, [nombre, i + 1, nombre]);
+    }
+
+    // Notas (Ejemplo simplificado)
+    await pool.query(`INSERT IGNORE INTO actividad_nota (actividad_id, estudiante_dni, nota)
+      SELECT ca.id, '15837237', 20.00 FROM curso_actividad ca JOIN cursos c ON c.id = ca.curso_id JOIN grados g ON g.id = ca.grado_id JOIN secciones s ON s.id = ca.seccion_id WHERE c.nombre='Matemática' AND g.nombre='1°' AND s.nombre='A' AND ca.nombre='Práctica'`);
+
+    console.log('✅ Datos de prueba cargados correctamente');
+  } catch (e) {
+    console.error('⚠️ Error cargando datos de prueba (puede que ya existan):', e);
   }
 }
 
@@ -202,7 +265,7 @@ app.get(/(.*)/, (req, res, next) => {
 // Docentes
 app.get('/api/docentes', async (req, res) => {
   try {
-    const sql = 'SELECT d.dni, d.nombre, d.descripcion, x.cursos FROM docente d LEFT JOIN (SELECT dc.dni, GROUP_CONCAT(c.nombre ORDER BY c.nombre SEPARATOR ", ") AS cursos FROM docente_curso dc JOIN cursos c ON c.id = dc.curso_id GROUP BY dc.dni) x ON x.dni COLLATE utf8mb4_unicode_ci = d.dni COLLATE utf8mb4_unicode_ci ORDER BY d.nombre';
+    const sql = 'SELECT d.dni, d.nombre, d.descripcion, d.password, x.cursos FROM docente d LEFT JOIN (SELECT dc.dni, GROUP_CONCAT(c.nombre ORDER BY c.nombre SEPARATOR ", ") AS cursos FROM docente_curso dc JOIN cursos c ON c.id = dc.curso_id GROUP BY dc.dni) x ON x.dni COLLATE utf8mb4_unicode_ci = d.dni COLLATE utf8mb4_unicode_ci ORDER BY d.nombre';
     const [rows] = await pool.query(sql);
     res.json({ ok: true, data: rows });
   } catch (e) {
@@ -622,12 +685,10 @@ app.post('/api/docentes', async (req, res) => {
   }
   // Generar contraseña: Primer nombre (primera palabra) + 2 primeros dígitos del DNI
   const primerNombre = nombre.trim().split(' ')[0];
-  const plainPassword = (primerNombre + String(dni).substring(0, 2)) || String(dni).slice(-6);
-  
+  const password = (primerNombre + String(dni).substring(0, 2)) || String(dni).slice(-6);
   try {
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
-    const [result] = await pool.query('INSERT INTO docente (dni, nombre, descripcion, password) VALUES (?, ?, ?, ?)', [dni, nombre, descripcion || null, hashedPassword]);
-    res.json({ ok: true, id: result.insertId, password: plainPassword });
+    const [result] = await pool.query('INSERT INTO docente (dni, nombre, descripcion, password) VALUES (?, ?, ?, ?)', [dni, nombre, descripcion || null, password]);
+    res.json({ ok: true, id: result.insertId, password });
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
       res.status(409).json({ ok: false, error: 'DNI ya registrado' });
@@ -649,11 +710,7 @@ app.put('/api/docentes/:dni', async (req, res) => {
     const params = [];
     if (typeof nombre === 'string' && nombre.trim()) { fields.push('nombre = ?'); params.push(nombre.trim()); }
     if (typeof descripcion === 'string') { fields.push('descripcion = ?'); params.push(descripcion.trim() || null); }
-    if (typeof password === 'string' && password.trim()) { 
-      fields.push('password = ?'); 
-      const hashedPassword = await bcrypt.hash(password.trim(), 10);
-      params.push(hashedPassword); 
-    }
+    if (typeof password === 'string' && password.trim()) { fields.push('password = ?'); params.push(password.trim()); }
     if (fields.length === 0) return res.status(400).json({ ok: false, error: 'No hay campos para actualizar' });
     params.push(dni);
     const [result] = await pool.query(`UPDATE docente SET ${fields.join(', ')} WHERE dni = ?`, params);
@@ -677,7 +734,15 @@ app.delete('/api/docentes/:dni', async (req, res) => {
   }
 });
 
-
+// Redundante: asegurar ruta /api/cursos registrada
+app.get('/api/cursos', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, nombre, descripcion FROM cursos ORDER BY nombre');
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 // Estudiantes
 app.get('/api/estudiantes', async (req, res) => {
@@ -1187,33 +1252,10 @@ app.post('/api/login/docente', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Faltan credenciales' });
   }
   try {
-    const [rows] = await pool.query('SELECT dni, password FROM docente WHERE dni = ? LIMIT 1', [dni]);
+    const [rows] = await pool.query('SELECT dni FROM docente WHERE dni = ? AND password = ? LIMIT 1', [dni, password]);
     if (rows.length === 0) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
     }
-    const user = rows[0];
-    const storedPassword = user.password;
-    
-    // Check if stored password is a hash (bcrypt hashes start with $2a$, $2b$, or $2y$ and are 60 chars long)
-    const isHash = storedPassword.startsWith('$2') && storedPassword.length === 60;
-
-    let valid = false;
-    if (isHash) {
-      valid = await bcrypt.compare(password, storedPassword);
-    } else {
-      // Legacy plain text check
-      if (password === storedPassword) {
-        valid = true;
-        // Lazy migration: hash and update
-        const newHash = await bcrypt.hash(password, 10);
-        await pool.query('UPDATE docente SET password = ? WHERE dni = ?', [newHash, dni]);
-      }
-    }
-
-    if (!valid) {
-      return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
-    }
-    
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -1268,11 +1310,10 @@ app.post('/api/estudiantes/grados/promover', async (req, res) => {
 
     let affected = 0;
     
-    // 3. Calcular y actualizar (Optimizado por lotes)
-    const updates = new Map(); // Key: "nextVal|nextId" -> Set of DNIs
-
+    // 3. Calcular y actualizar
     for (const s of students) {
       let current = null;
+      // Priorizar grado_id si existe y es válido
       if (s.grado_id && idToNum.has(s.grado_id)) {
         current = idToNum.get(s.grado_id);
       } else {
@@ -1285,23 +1326,9 @@ app.post('/api/estudiantes/grados/promover', async (req, res) => {
       if (nextVal === current) continue;
 
       const nextId = numToId.get(nextVal) || null;
-      const key = `${nextVal}|${nextId !== null ? nextId : 'NULL'}`;
       
-      if (!updates.has(key)) {
-        updates.set(key, { nextVal, nextId, dnis: [] });
-      }
-      updates.get(key).dnis.push(s.dni);
-    }
-
-    // Ejecutar actualizaciones por lote
-    for (const [key, data] of updates) {
-       const { nextVal, nextId, dnis } = data;
-       if (dnis.length > 0) {
-         const placeholders = dnis.map(() => '?').join(',');
-         const params = [nextVal, nextId, ...dnis];
-         const [res] = await pool.query(`UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni IN (${placeholders})`, params);
-         affected += res.affectedRows;
-       }
+      await pool.query('UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni = ?', [nextVal, nextId, s.dni]);
+      affected++;
     }
 
     res.json({ ok: true, affected });
@@ -1336,9 +1363,7 @@ app.post('/api/estudiantes/grados/bajar', async (req, res) => {
 
     let affected = 0;
     
-    // 3. Calcular y actualizar (Optimizado por lotes)
-    const updates = new Map();
-
+    // 3. Calcular y actualizar
     for (const s of students) {
       let current = null;
       if (s.grado_id && idToNum.has(s.grado_id)) {
@@ -1353,23 +1378,9 @@ app.post('/api/estudiantes/grados/bajar', async (req, res) => {
       if (nextVal === current) continue;
 
       const nextId = numToId.get(nextVal) || null;
-      const key = `${nextVal}|${nextId !== null ? nextId : 'NULL'}`;
-
-      if (!updates.has(key)) {
-        updates.set(key, { nextVal, nextId, dnis: [] });
-      }
-      updates.get(key).dnis.push(s.dni);
-    }
-
-    // Ejecutar actualizaciones por lote
-    for (const [key, data] of updates) {
-       const { nextVal, nextId, dnis } = data;
-       if (dnis.length > 0) {
-         const placeholders = dnis.map(() => '?').join(',');
-         const params = [nextVal, nextId, ...dnis];
-         const [res] = await pool.query(`UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni IN (${placeholders})`, params);
-         affected += res.affectedRows;
-       }
+      
+      await pool.query('UPDATE estudiantes SET grado = ?, grado_id = ? WHERE dni = ?', [nextVal, nextId, s.dni]);
+      affected++;
     }
 
     res.json({ ok: true, affected });

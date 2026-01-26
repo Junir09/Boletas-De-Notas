@@ -1637,7 +1637,7 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
 
 // === SERVIR REACT APP (CATCH-ALL) ===
 // Cualquier petición que no sea API, devuelve el index.html de React
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 

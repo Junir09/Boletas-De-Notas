@@ -168,14 +168,6 @@ async function initDB() {
     `);
 
     // 4. Datos iniciales básicos (si están vacíos)
-    const [admins] = await pool.query('SELECT COUNT(*) AS cnt FROM administrador');
-    if ((admins[0] && admins[0].cnt) === 0) {
-      // Default: user / superuser (hashed)
-      const hash = await bcrypt.hash('superuser', 10);
-      await pool.query('INSERT INTO administrador (usuario, password) VALUES (?, ?)', ['user', hash]);
-      console.log('✅ Administrador por defecto creado (user/superuser)');
-    }
-
     const [grados] = await pool.query('SELECT COUNT(*) AS cnt FROM grados');
     if ((grados[0] && grados[0].cnt) === 0) {
       await pool.query('INSERT INTO grados (nombre) VALUES ("1°"), ("2°"), ("3°"), ("4°"), ("5°"), ("6°")');
@@ -1230,30 +1222,6 @@ app.post('/api/login/docente', async (req, res) => {
   }
 });
 
-// Login Administrador
-app.post('/api/login/admin', async (req, res) => {
-  const { usuario, password } = req.body || {};
-  if (!usuario || !password) {
-    return res.status(400).json({ ok: false, error: 'Faltan credenciales' });
-  }
-  try {
-    const [rows] = await pool.query('SELECT usuario, password FROM administrador WHERE usuario = ? LIMIT 1', [usuario]);
-    if (rows.length === 0) {
-      return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
-    }
-    const user = rows[0];
-    const valid = await bcrypt.compare(password, user.password);
-    
-    if (!valid) {
-      return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
-    }
-    
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
 // Login Alumno
 app.post('/api/login/alumno', async (req, res) => {
   const { dni } = req.body || {};
@@ -1575,6 +1543,11 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
   }
 });
 
+// === SERVIR REACT APP (CATCH-ALL) ===
+// Cualquier petición que no sea API, devuelve el index.html de React
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

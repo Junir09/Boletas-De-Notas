@@ -180,8 +180,72 @@ async function initDB() {
 
     console.log('✅ Estructura de base de datos verificada/creada correctamente');
 
+    await seedData();
+
   } catch (e) {
     console.error('❌ Error fatal inicializando base de datos:', e);
+  }
+}
+
+async function seedData() {
+  try {
+    console.log('🔄 Verificando datos iniciales...');
+    
+    // Cursos
+    await pool.query(`INSERT IGNORE INTO cursos (nombre, descripcion) VALUES ('Matemática', NULL), ('Comunicación', NULL), ('Ciencias', NULL)`);
+    
+    // Docentes
+    await pool.query(`INSERT IGNORE INTO docente (dni, nombre, descripcion, password) VALUES 
+      ('12345678', 'Juan Pérez', NULL, '654321'),
+      ('87654321', 'María López', NULL, '123456')`);
+      
+    // Docente Curso
+    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '12345678', c.id FROM cursos c WHERE c.nombre = 'Matemática'`);
+    await pool.query(`INSERT IGNORE INTO docente_curso (dni, curso_id) SELECT '87654321', c.id FROM cursos c WHERE c.nombre = 'Comunicación'`);
+    
+    // Estudiantes
+    await pool.query(`INSERT IGNORE INTO estudiantes (dni, apellidos, nombres, grado, seccion) VALUES
+      ('15837237', 'Castro García', 'Sofía', 1, 'A'),
+      ('34871792', 'Castro López', 'Luis', 1, 'A'),
+      ('21178702', 'Díaz Rojas', 'Andrea', 1, 'A'),
+      ('51526326', 'Flores Mendoza', 'Carlos', 1, 'A'),
+      ('60859754', 'Flores Salazar', 'Mariana', 1, 'A'),
+      ('29052448', 'Flores Pérez', 'Jorge', 1, 'A')
+      ON DUPLICATE KEY UPDATE apellidos=VALUES(apellidos), nombres=VALUES(nombres), grado=VALUES(grado), seccion=VALUES(seccion)`);
+      
+    // Vincular estudiantes con IDs de grado/seccion
+    await pool.query(`
+      UPDATE estudiantes e
+      JOIN grados g ON CAST(SUBSTRING_INDEX(g.nombre, '°', 1) AS UNSIGNED) = e.grado
+      SET e.grado_id = g.id
+      WHERE e.grado IS NOT NULL AND e.grado_id IS NULL`);
+    await pool.query(`
+      UPDATE estudiantes e
+      JOIN secciones s ON s.nombre = e.seccion
+      SET e.seccion_id = s.id
+      WHERE e.seccion IS NOT NULL AND e.seccion_id IS NULL`);
+
+    // Curso Grado
+    await pool.query(`INSERT IGNORE INTO curso_grado (curso_id, grado_id, seccion_id)
+      SELECT c.id, g.id, s.id FROM cursos c JOIN grados g ON g.nombre = '1°' JOIN secciones s ON s.nombre = 'A' WHERE c.nombre = 'Matemática'`);
+
+    // Actividades
+    const actividades = ['Práctica', 'Tarea', 'Examen', 'Unidad 1'];
+    for (let i = 0; i < actividades.length; i++) {
+      const nombre = actividades[i];
+      await pool.query(`INSERT INTO curso_actividad (curso_id, grado_id, seccion_id, nombre, orden)
+        SELECT c.id, g.id, s.id, ?, ? FROM cursos c JOIN grados g ON g.nombre='1°' JOIN secciones s ON s.nombre='A' WHERE c.nombre='Matemática' AND NOT EXISTS(
+          SELECT 1 FROM curso_actividad ca WHERE ca.curso_id=c.id AND ca.grado_id=g.id AND ca.seccion_id=s.id AND ca.nombre=?
+        )`, [nombre, i + 1, nombre]);
+    }
+
+    // Notas (Ejemplo simplificado)
+    await pool.query(`INSERT IGNORE INTO actividad_nota (actividad_id, estudiante_dni, nota)
+      SELECT ca.id, '15837237', 20.00 FROM curso_actividad ca JOIN cursos c ON c.id = ca.curso_id JOIN grados g ON g.id = ca.grado_id JOIN secciones s ON s.id = ca.seccion_id WHERE c.nombre='Matemática' AND g.nombre='1°' AND s.nombre='A' AND ca.nombre='Práctica'`);
+
+    console.log('✅ Datos de prueba cargados correctamente');
+  } catch (e) {
+    console.error('⚠️ Error cargando datos de prueba (puede que ya existan):', e);
   }
 }
 

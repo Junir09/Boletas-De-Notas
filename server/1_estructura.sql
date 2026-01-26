@@ -1,6 +1,8 @@
 -- Script de Estructura - ESTRATEGIA DEFINITIVA
 -- Paso 1: Crear tablas SIN claves foráneas
 -- Paso 2: Agregar claves foráneas al final
+GENERATE_SOURCEMAP
+false
 
 USE `test`;
 

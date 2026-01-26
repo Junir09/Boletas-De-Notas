@@ -3,14 +3,22 @@
 
 const mysql = require('mysql2/promise');
 
-const DB_HOST = process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com';
-const DB_USER = process.env.DB_USER || '3sMXNNzjuA9pm7j.root';
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'test';
-const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000;
+const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
+
+console.log('--- Configuración de Base de Datos ---');
+console.log('DB_HOST:', DB_HOST);
+console.log('DB_USER:', DB_USER);
+console.log('DB_NAME:', DB_NAME);
+console.log('DB_PORT:', DB_PORT);
+console.log('DB_SSL:', process.env.DB_SSL);
+console.log('--------------------------------------');
 
 // TiDB requiere SSL seguro. Si estamos conectando a TiDB, forzamos SSL.
-const useSSL = process.env.DB_SSL === 'true' || DB_HOST.includes('tidbcloud');
+const useSSL = process.env.DB_SSL === 'true' || (DB_HOST && DB_HOST.includes('tidbcloud'));
 
 const pool = mysql.createPool({
   host: DB_HOST,

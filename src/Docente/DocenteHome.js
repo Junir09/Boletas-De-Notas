@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { BookOpen, FileText, BarChart3, LogOut } from 'lucide-react';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/docente/docentehome.css';
@@ -9,7 +8,6 @@ import Boletas from './Boletas';
 import Reportes from './Reportes';
 
 function DocenteHome() {
-  const navigate = useNavigate();
   const [vista, setVista] = useState('cursos');
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +69,7 @@ function DocenteHome() {
 
   const cerrarSesion = () => {
     localStorage.removeItem('dni');
-    navigate('/acceso');
+    window.location.hash = '/acceso';
   };
 
   return (
@@ -100,19 +98,18 @@ function DocenteHome() {
 
       <main className="docente-content">
         {vista === 'cursos' && (
-          <Cursos 
-            cursos={cursos} 
-            loading={loading} 
-            asignaciones={asignaciones} 
-            onSelectCurso={(id) => { console.log('Curso seleccionado', id); }} 
+          <Cursos
+            docente={docente}
+            cursos={cursos}
+            loading={loading}
+            asignaciones={asignaciones}
+            onIrBoletas={(sel) => { setNotaSel(sel); setVista('boletas'); }}
           />
         )}
-        {vista === 'boletas' && (
-           <Boletas />
-        )}
-        {vista === 'reportes' && (
-           <Reportes />
-        )}
+
+        {vista === 'boletas' && (<Boletas seleccion={notaSel} />)}
+
+        {vista === 'reportes' && (<Reportes />)}
       </main>
     </div>
   );

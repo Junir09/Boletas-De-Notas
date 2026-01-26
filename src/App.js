@@ -26,8 +26,19 @@ function App() {
     try {
       const cfg = JSON.parse(localStorage.getItem('config') || '{}');
       if (cfg && typeof cfg === 'object') {
-        if (cfg.welcomeTitle) setWelcomeTitle(String(cfg.welcomeTitle));
-        if (cfg.logoDataUrl) setLogoUrl(String(cfg.logoDataUrl));
+        if (cfg.welcomeTitle) {
+          setWelcomeTitle(String(cfg.welcomeTitle));
+          document.title = String(cfg.welcomeTitle); // Cambiar título del documento
+        }
+        if (cfg.logoDataUrl) {
+          setLogoUrl(String(cfg.logoDataUrl));
+          // Cambiar Favicon dinámicamente
+          const favicon = document.querySelector("link[rel*='icon']") || document.createElement('link');
+          favicon.type = 'image/png';
+          favicon.rel = 'shortcut icon';
+          favicon.href = String(cfg.logoDataUrl);
+          document.getElementsByTagName('head')[0].appendChild(favicon);
+        }
       }
     } catch {}
   }, []);

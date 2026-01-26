@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Home, UserPlus, GraduationCap, Users, BookOpen, Settings, LogOut } from 'lucide-react';
 
 import RegistrarEstudiantes from './RegistrarEstudiantes';
@@ -12,11 +11,10 @@ import AsignarGrados from './AsignarGrados';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/admin/inicio.css';
 function AdminHome() {
-  const navigate = useNavigate();
   const [vista, setVista] = useState('inicio');
 
   const ir = (v) => setVista(v);
-  const cerrarSesion = () => { navigate('/acceso'); };
+  const cerrarSesion = () => { window.location.hash = '/acceso'; };
 
   return (
     <div className="layout">

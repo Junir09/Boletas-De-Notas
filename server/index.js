@@ -210,8 +210,6 @@ app.get('/api/docentes', async (req, res) => {
   }
 });
 
-
-
 app.get('/api/docentes/:dni', async (req, res) => {
   const dni = String(req.params.dni || '').trim();
   if (!dni) return res.status(400).json({ ok: false, error: 'Falta dni' });
@@ -1239,7 +1237,10 @@ app.post('/api/login/alumno', async (req, res) => {
   }
 });
 
-
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`API escuchando en http://localhost:${PORT}`);
+});
 
 // Promover grado (+1, máx 6)
 app.post('/api/estudiantes/grados/promover', async (req, res) => {
@@ -1541,10 +1542,4 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
-});
-
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`API escuchando en http://localhost:${PORT}`);
 });

@@ -137,7 +137,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Servir frontend para cualquier ruta no manejada por API
-app.get('*', (req, res, next) => {
+app.get(/(.*)/, (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });

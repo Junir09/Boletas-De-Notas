@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import '../assets/css/login.css';
 import { Eye, EyeOff } from 'lucide-react';
 
-function LoginAvanzado({ onSuccess }) {
+function LoginAvanzado() {
+  const navigate = useNavigate();
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,7 +27,7 @@ function LoginAvanzado({ onSuccess }) {
     const adminPassword = String(cfg.adminPassword || 'superuser');
     if (u === adminUser && p === adminPassword) {
       setError('');
-      onSuccess('#/administrador');
+      navigate('/administrador');
       return;
     }
 
@@ -42,7 +44,7 @@ function LoginAvanzado({ onSuccess }) {
         if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
         setError('');
         try { localStorage.setItem('dni', u); } catch {}
-        onSuccess('#/docente');
+        navigate('/docente');
       } catch (err) {
         console.error(err);
         setError('No se pudo conectar al servidor');
@@ -106,7 +108,7 @@ function LoginAvanzado({ onSuccess }) {
         
         <div className="footnote">
           ¿Quieres volver al inicio?
-          <a href="/" style={{ marginLeft: 6 }}>Ir al inicio</a>
+          <Link to="/" style={{ marginLeft: 6 }}>Ir al inicio</Link>
         </div>
       </form>
     </div>

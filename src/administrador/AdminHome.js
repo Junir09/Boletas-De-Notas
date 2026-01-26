@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Home, UserPlus, GraduationCap, Users, BookOpen, Settings, LogOut } from 'lucide-react';
 
 import RegistrarEstudiantes from './RegistrarEstudiantes';
@@ -10,11 +11,15 @@ import Cursos from './Cursos';
 import AsignarGrados from './AsignarGrados';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/admin/inicio.css';
+
 function AdminHome() {
+  const navigate = useNavigate();
   const [vista, setVista] = useState('inicio');
 
   const ir = (v) => setVista(v);
-  const cerrarSesion = () => { window.location.hash = '/acceso'; };
+  const cerrarSesion = () => { 
+    navigate('/acceso'); 
+  };
 
   return (
     <div className="layout">
@@ -103,7 +108,7 @@ function AdminHome() {
                   <Users size={24} />
                 </div>
                 <h3>Lista de Estudiantes</h3>
-                <p>Visualiza todos los estudiantes registrados en el sistema con su información completa: DNI, apellidos, nombres, grado y sección.</p>
+                <p>Visualiza, busca y gestiona la lista completa de estudiantes. Accede a opciones de edición y eliminación.</p>
               </div>
 
               <div className="funcion-card" onClick={() => ir('lista_docentes')}>
@@ -111,7 +116,7 @@ function AdminHome() {
                   <Users size={24} />
                 </div>
                 <h3>Lista de Docentes</h3>
-                <p>Consulta y edita la información de los docentes. Asigna cursos, modifica datos personales y gestiona sus credenciales de acceso.</p>
+                <p>Administra el personal docente. Actualiza información y gestiona las asignaciones de cursos.</p>
               </div>
 
               <div className="funcion-card" onClick={() => ir('asignar_grados')}>
@@ -119,7 +124,7 @@ function AdminHome() {
                   <GraduationCap size={24} />
                 </div>
                 <h3>Asignar Grados</h3>
-                <p>Asigna grados (1° a 6°) y secciones a los estudiantes. Busca por DNI, selecciona múltiples alumnos y promueve o baja de grado fácilmente.</p>
+                <p>Configura la estructura académica. Crea grados y secciones para organizar a los estudiantes.</p>
               </div>
 
               <div className="funcion-card" onClick={() => ir('cursos')}>
@@ -127,32 +132,28 @@ function AdminHome() {
                   <BookOpen size={24} />
                 </div>
                 <h3>Gestión de Cursos</h3>
-                <p>Crea, edita y elimina cursos del sistema. Asigna cursos a docentes y gestiona las materias disponibles para cada grado.</p>
+                <p>Administra el catálogo de cursos. Asigna cursos a grados, secciones y docentes responsables.</p>
               </div>
 
               <div className="funcion-card" onClick={() => ir('config')}>
                 <div className="funcion-icon">
                   <Settings size={24} />
                 </div>
-                <h3>Configuración del Sistema</h3>
-                <p>Personaliza el título de bienvenida, logo institucional, grados disponibles y secciones. Configura los parámetros generales del sistema.</p>
+                <h3>Configuración</h3>
+                <p>Personaliza aspectos generales del sistema, como títulos y logos institucionales.</p>
               </div>
 
             </div>
-
-            <div className="ayuda-section">
-              <h3>¿Necesitas ayuda?</h3>
-              <p>Usa el menú lateral para navegar entre las diferentes secciones. Cada módulo cuenta con instrucciones específicas para facilitar su uso.</p>
-            </div>
           </div>
         )}
+
         {vista === 'registrar_estudiantes' && <RegistrarEstudiantes />}
         {vista === 'registrar_docentes' && <RegistrarDocentes />}
         {vista === 'lista_estudiantes' && <ListaEstudiantes />}
         {vista === 'lista_docentes' && <ListaDocentes />}
-        {vista === 'config' && <ConfiguracionSistema />}
-        {vista === 'cursos' && <Cursos />}
         {vista === 'asignar_grados' && <AsignarGrados />}
+        {vista === 'cursos' && <Cursos />}
+        {vista === 'config' && <ConfiguracionSistema />}
       </main>
     </div>
   );

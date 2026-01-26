@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import '../assets/css/login.css';
 import { Eye, EyeOff } from 'lucide-react';
 
-function LoginAvanzado() {
-  const navigate = useNavigate();
+function LoginAvanzado({ onSuccess }) {
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,22 +15,21 @@ function LoginAvanzado() {
     e.preventDefault();
     const u = usuario.trim();
     const p = password.trim();
-    if (!u) { setError('Ingresa Usuario/DNI'); return; }
+    if (!u) { setError('Ingresa DNI'); return; }
     if (!p) { setError('Ingresa tu contraseña'); return; }
 
-    // 1. Intentar Login Local (Legacy Admin)
+    // Administrador
     let cfg = {};
     try { cfg = JSON.parse(localStorage.getItem('config') || '{}'); } catch {}
     const adminUser = String(cfg.adminUser || 'user');
     const adminPassword = String(cfg.adminPassword || 'superuser');
-    
     if (u === adminUser && p === adminPassword) {
       setError('');
-      navigate('/administrador/admin-local');
+      onSuccess('#/administrador');
       return;
     }
 
-    // 2. Intentar Login Docente (si es DNI)
+    // Docente por DNI (solo dígitos, mínimo 8)
     if (esSoloDigitos(u)) {
       if (u.length < 8) { setError('El DNI debe tener al menos 8 dígitos'); return; }
       try {
@@ -42,37 +39,19 @@ function LoginAvanzado() {
           body: JSON.stringify({ dni: u, password: p })
         });
         const data = await resp.json();
-        if (resp.ok && data.ok) {
-          setError('');
-          try { localStorage.setItem('dni', u); } catch {}
-          const targetUuid = data.uuid || 'error-no-uuid';
-          navigate(`/docente/${targetUuid}`);
-          return;
-        }
-        // Si falló docente, seguimos para ver si es admin BD
+        if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
+        setError('');
+        try { localStorage.setItem('dni', u); } catch {}
+        onSuccess('#/docente');
       } catch (err) {
         console.error(err);
+        setError('No se pudo conectar al servidor');
       }
+      return;
     }
 
-    // 3. Intentar Login Administrador (BD)
-    try {
-      const resp = await fetch(api('/api/login/admin'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario: u, password: p })
-      });
-      const data = await resp.json();
-      if (resp.ok && data.ok) {
-        setError('');
-        navigate(`/administrador/${data.uuid}`);
-        return;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    setError('Credenciales inválidas');
+    // Otros usuarios no soportados (usar login clásico de alumno)
+    setError('Este acceso es solo para Docente. Usa el inicio de boleta.');
   };
 
   return (
@@ -127,7 +106,7 @@ function LoginAvanzado() {
         
         <div className="footnote">
           ¿Quieres volver al inicio?
-          <Link to="/" style={{ marginLeft: 6 }}>Ir al inicio</Link>
+          <a href="/" style={{ marginLeft: 6 }}>Ir al inicio</a>
         </div>
       </form>
     </div>

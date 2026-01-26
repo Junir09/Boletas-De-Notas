@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import '../assets/css/admin/sidebar.css';
 import '../assets/css/alumnos/alumnoshome.css';
 import { BookOpen, FileText, LogOut } from 'lucide-react';
@@ -8,8 +7,6 @@ import Cursos from './Cursos';
 import Boletines from './Boletines';
 
 function AlumnosHome() {
-  const navigate = useNavigate();
-  const { uuid } = useParams();
   const [vista, setVista] = useState('cursos');
   const [alumno, setAlumno] = useState(null);
   const [grados, setGrados] = useState([]);
@@ -129,7 +126,7 @@ function AlumnosHome() {
             <FileText size={18} />
             <span>Boletas</span>
           </button>
-          <button onClick={() => { try { localStorage.removeItem('dni'); } catch {} navigate('/'); }}>
+          <button onClick={() => { try { localStorage.removeItem('dni'); } catch {} window.location.hash = '#/'; }}>
             <LogOut size={18} />
             <span>Cerrar sesión</span>
           </button>

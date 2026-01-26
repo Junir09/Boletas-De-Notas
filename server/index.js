@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { pool } = require('./db');
 
 const app = express();
@@ -28,30 +27,6 @@ async function initDB() {
     console.log('🔄 Iniciando verificación de base de datos...');
 
     // 1. Tablas base (sin dependencias)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS administrador (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        uuid CHAR(36) NOT NULL,
-        usuario VARCHAR(50) NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_admin_uuid (uuid),
-        UNIQUE KEY uniq_admin_user (usuario)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS grados (
-        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        uuid CHAR(36) NOT NULL,
-        usuario VARCHAR(50) NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uniq_admin_uuid (uuid),
-        UNIQUE KEY uniq_admin_user (usuario)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS grados (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -83,7 +58,6 @@ async function initDB() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS docente (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        uuid CHAR(36) NOT NULL,
         dni VARCHAR(20) NOT NULL,
         nombre VARCHAR(100) NOT NULL,
         descripcion VARCHAR(255) NULL,
@@ -97,7 +71,6 @@ async function initDB() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS estudiantes (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        uuid CHAR(36) NOT NULL,
         dni VARCHAR(20) NOT NULL,
         apellidos VARCHAR(150) NOT NULL,
         nombres VARCHAR(150) NOT NULL,
@@ -106,7 +79,6 @@ async function initDB() {
         grado_id INT UNSIGNED NULL,
         seccion_id INT UNSIGNED NULL,
         PRIMARY KEY (id),
-        UNIQUE KEY uniq_estudiantes_uuid (uuid),
         UNIQUE KEY uniq_estudiantes_dni (dni),
         KEY idx_estudiantes_grado_id (grado_id),
         KEY idx_estudiantes_seccion_id (seccion_id)
@@ -205,44 +177,6 @@ async function initDB() {
     if ((secciones[0] && secciones[0].cnt) === 0) {
       await pool.query('INSERT INTO secciones (nombre) VALUES ("A"), ("B"), ("C")');
       console.log('✅ Secciones insertadas');
-    }
-
-    // 5. MIGRACIÓN UUID (Backfill para tablas existentes)
-    const tablesWithUuid = ['administrador', 'docente', 'estudiantes'];
-    for (const table of tablesWithUuid) {
-        try {
-            // Verificar si columna existe
-            const [columns] = await pool.query(`SHOW COLUMNS FROM ${table} LIKE 'uuid'`);
-            if (columns.length === 0) {
-                console.log(`[MIGRATION] Adding uuid column to ${table}...`);
-                await pool.query(`ALTER TABLE ${table} ADD COLUMN uuid CHAR(36) NOT NULL DEFAULT ''`);
-                
-                console.log(`[MIGRATION] Backfilling UUIDs for ${table}...`);
-                const [rows] = await pool.query(`SELECT id FROM ${table}`);
-                for (const row of rows) {
-                    await pool.query(`UPDATE ${table} SET uuid = ? WHERE id = ?`, [crypto.randomUUID(), row.id]);
-                }
-                
-                // Add unique index
-                try {
-                    await pool.query(`ALTER TABLE ${table} ADD UNIQUE INDEX uniq_${table}_uuid (uuid)`);
-                } catch (idxErr) {
-                    console.warn(`[MIGRATION] Index error (ignored): ${idxErr.message}`);
-                }
-                console.log(`[MIGRATION] Completed for ${table}`);
-            } else {
-               // Check for empty uuids and fix them
-               const [emptyRows] = await pool.query(`SELECT id FROM ${table} WHERE uuid = '' OR uuid IS NULL`);
-               if (emptyRows.length > 0) {
-                  console.log(`[MIGRATION] Fixing ${emptyRows.length} empty UUIDs in ${table}...`);
-                  for (const row of emptyRows) {
-                      await pool.query(`UPDATE ${table} SET uuid = ? WHERE id = ?`, [crypto.randomUUID(), row.id]);
-                  }
-               }
-            }
-        } catch (migErr) {
-            console.error(`[MIGRATION] Error processing ${table}:`, migErr);
-        }
     }
 
     console.log('✅ Estructura de base de datos verificada/creada correctamente');
@@ -694,9 +628,8 @@ app.post('/api/docentes', async (req, res) => {
   
   try {
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
-    const uuid = crypto.randomUUID();
-    const [result] = await pool.query('INSERT INTO docente (uuid, dni, nombre, descripcion, password) VALUES (?, ?, ?, ?, ?)', [uuid, dni, nombre, descripcion || null, hashedPassword]);
-    res.json({ ok: true, id: result.insertId, password: plainPassword, uuid });
+    const [result] = await pool.query('INSERT INTO docente (dni, nombre, descripcion, password) VALUES (?, ?, ?, ?)', [dni, nombre, descripcion || null, hashedPassword]);
+    res.json({ ok: true, id: result.insertId, password: plainPassword });
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
       res.status(409).json({ ok: false, error: 'DNI ya registrado' });
@@ -831,12 +764,11 @@ app.post('/api/estudiantes', async (req, res) => {
     }
     const legacySeccion = normSeccion || null;
 
-    const uuid = crypto.randomUUID();
     const [result] = await pool.query(
-      'INSERT INTO estudiantes (uuid, dni, apellidos, nombres, grado_id, seccion_id, grado, seccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-      [uuid, d, a, n, gradoId, seccionId, legacyGrado, legacySeccion]
+      'INSERT INTO estudiantes (dni, apellidos, nombres, grado_id, seccion_id, grado, seccion) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+      [d, a, n, gradoId, seccionId, legacyGrado, legacySeccion]
     );
-    res.json({ ok: true, id: result.insertId, uuid });
+    res.json({ ok: true, id: result.insertId });
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
       res.status(409).json({ ok: false, error: 'DNI ya registrado' });
@@ -1257,7 +1189,7 @@ app.post('/api/login/docente', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Faltan credenciales' });
   }
   try {
-    const [rows] = await pool.query('SELECT dni, password, uuid FROM docente WHERE dni = ? LIMIT 1', [dni]);
+    const [rows] = await pool.query('SELECT dni, password FROM docente WHERE dni = ? LIMIT 1', [dni]);
     if (rows.length === 0) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
     }
@@ -1284,31 +1216,7 @@ app.post('/api/login/docente', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
     }
     
-    res.json({ ok: true, uuid: user.uuid });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// Login Administrador
-app.post('/api/login/admin', async (req, res) => {
-  const { usuario, password } = req.body || {};
-  if (!usuario || !password) {
-    return res.status(400).json({ ok: false, error: 'Faltan credenciales' });
-  }
-  try {
-    const [rows] = await pool.query('SELECT usuario, password, uuid FROM administrador WHERE usuario = ? LIMIT 1', [usuario]);
-    if (rows.length === 0) {
-      return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
-    }
-    const user = rows[0];
-    const valid = await bcrypt.compare(password, user.password);
-    
-    if (!valid) {
-      return res.status(401).json({ ok: false, error: 'Credenciales inválidas' });
-    }
-    
-    res.json({ ok: true, uuid: user.uuid });
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -1319,11 +1227,11 @@ app.post('/api/login/alumno', async (req, res) => {
   const { dni } = req.body || {};
   try {
     if (dni) {
-      const [rows] = await pool.query('SELECT dni, uuid FROM estudiantes WHERE dni = ? LIMIT 1', [dni]);
+      const [rows] = await pool.query('SELECT dni FROM estudiantes WHERE dni = ? LIMIT 1', [dni]);
       if (rows.length === 0) {
         return res.status(404).json({ ok: false, error: 'DNI inválido' });
       }
-      return res.json({ ok: true, uuid: rows[0].uuid });
+      return res.json({ ok: true });
     }
     return res.status(400).json({ ok: false, error: 'Falta dni' });
   } catch (e) {
@@ -1637,7 +1545,7 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
 
 // === SERVIR REACT APP (CATCH-ALL) ===
 // Cualquier petición que no sea API, devuelve el index.html de React
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 

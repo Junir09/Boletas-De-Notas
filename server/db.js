@@ -9,7 +9,7 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || '', // por defecto en XAMPP es vacío
   database: process.env.DB_NAME || 'test',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
+  ssl: (process.env.DB_SSL === 'true' || (process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud'))) ? { rejectUnauthorized: true } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

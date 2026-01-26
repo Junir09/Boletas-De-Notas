@@ -126,7 +126,7 @@ function AlumnosHome() {
             <FileText size={18} />
             <span>Boletas</span>
           </button>
-          <button onClick={() => { try { localStorage.removeItem('dni'); localStorage.removeItem('role'); } catch {} window.location.hash = '#/'; }}>
+          <button onClick={() => { try { localStorage.removeItem('dni'); } catch {} window.location.hash = '#/'; }}>
             <LogOut size={18} />
             <span>Cerrar sesión</span>
           </button>

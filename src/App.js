@@ -57,10 +57,7 @@ function App() {
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) { setError(data.error || 'DNI inválido'); return; }
-      try { 
-        localStorage.setItem('dni', valor.trim()); 
-        localStorage.setItem('role', 'alumno');
-      } catch {}
+      try { localStorage.setItem('dni', valor.trim()); } catch {}
       window.location.hash = '#/alumnos';
     } catch (err) {
       console.error(err);
@@ -73,11 +70,6 @@ function App() {
   // Navegación oculta: se retiraron los botones de login
 
   if (route.startsWith('#/docente')) {
-    const role = localStorage.getItem('role');
-    if (role !== 'docente') {
-      window.location.hash = '#/acceso';
-      return null;
-    }
     return (
       <>
         <DocenteHome />
@@ -86,11 +78,6 @@ function App() {
   }
 
   if (route.startsWith('#/administrador')) {
-    const role = localStorage.getItem('role');
-    if (role !== 'admin') {
-      window.location.hash = '#/acceso';
-      return null;
-    }
     return (
       <>
         <AdminHome />
@@ -99,11 +86,6 @@ function App() {
   }
 
   if (route.startsWith('#/alumnos')) {
-    const role = localStorage.getItem('role');
-    if (role !== 'alumno') {
-      window.location.hash = '#/';
-      return null;
-    }
     return (
       <>
         <AlumnosHome />

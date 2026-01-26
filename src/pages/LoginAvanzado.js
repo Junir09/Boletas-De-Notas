@@ -18,19 +18,25 @@ function LoginAvanzado({ onSuccess }) {
     if (!u) { setError('Ingresa DNI'); return; }
     if (!p) { setError('Ingresa tu contraseña'); return; }
 
-    // Administrador
-    let cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem('config') || '{}'); } catch {}
-    const adminUser = String(cfg.adminUser || 'user');
-    const adminPassword = String(cfg.adminPassword || 'superuser');
-    if (u === adminUser && p === adminPassword) {
-      setError('');
-      localStorage.setItem('role', 'admin');
-      onSuccess('#/administrador');
-      return;
+    // 1. Intentar login como Administrador (Backend)
+    try {
+      const respAdmin = await fetch(api('/api/login/admin'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario: u, password: p })
+      });
+      const dataAdmin = await respAdmin.json();
+      if (respAdmin.ok && dataAdmin.ok) {
+        setError('');
+        onSuccess('#/administrador');
+        return;
+      }
+    } catch (err) {
+      console.error('Error verificando admin:', err);
+      // Continuar para intentar como docente
     }
 
-    // Docente por DNI (solo dígitos, mínimo 8)
+    // 2. Docente por DNI (solo dígitos, mínimo 8)
     if (esSoloDigitos(u)) {
       if (u.length < 8) { setError('El DNI debe tener al menos 8 dígitos'); return; }
       try {
@@ -42,10 +48,7 @@ function LoginAvanzado({ onSuccess }) {
         const data = await resp.json();
         if (!resp.ok || !data.ok) { setError(data.error || 'Credenciales inválidas'); return; }
         setError('');
-        try { 
-          localStorage.setItem('dni', u); 
-          localStorage.setItem('role', 'docente');
-        } catch {}
+        try { localStorage.setItem('dni', u); } catch {}
         onSuccess('#/docente');
       } catch (err) {
         console.error(err);

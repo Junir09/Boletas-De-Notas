@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/alumnos/boletines.css';
 import { api } from '../api';
+import logoDefault from '../assets/images/logo.png';
 
 export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }) {
   const [actividades, setActividades] = useState([]);
@@ -33,10 +34,22 @@ export default function Boletines({ alumno, cursos, cursoSel, onChangeCursoSel }
   };
 
   useEffect(() => {
-    try {
-      const cfg = JSON.parse(localStorage.getItem('config') || '{}');
-      if (cfg.logoDataUrl) setLogoUrl(cfg.logoDataUrl);
-    } catch (_) {}
+    const loadLogo = async () => {
+      try {
+        const cfg = JSON.parse(localStorage.getItem('config') || '{}');
+        if (cfg.logoDataUrl) {
+          setLogoUrl(cfg.logoDataUrl);
+        } else {
+          // Cargar logo por defecto
+          const resp = await fetch(logoDefault);
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => setLogoUrl(reader.result);
+          reader.readAsDataURL(blob);
+        }
+      } catch (_) {}
+    };
+    loadLogo();
   }, []);
 
   useEffect(() => {

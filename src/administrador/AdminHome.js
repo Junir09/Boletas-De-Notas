@@ -14,7 +14,7 @@ function AdminHome() {
   const [vista, setVista] = useState('inicio');
 
   const ir = (v) => setVista(v);
-  const cerrarSesion = () => { window.location.hash = '/acceso'; };
+  const cerrarSesion = () => { window.location.href = '/acceso'; };
 
   return (
     <div className="layout">

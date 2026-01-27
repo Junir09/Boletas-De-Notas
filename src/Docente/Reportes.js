@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../assets/css/docente/reportes.css';
 import { api } from '../api';
+import logoDefault from '../assets/images/logo.png';
 
 export default function Reportes() {
   const [cursos, setCursos] = useState([]);
@@ -12,6 +13,25 @@ export default function Reportes() {
   const [actividades, setActividades] = useState([]);
   const [notas, setNotas] = useState({});
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const cfg = JSON.parse(localStorage.getItem('config') || '{}');
+        if (cfg.logoDataUrl) {
+          setLogoUrl(cfg.logoDataUrl);
+        } else {
+          const resp = await fetch(logoDefault);
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => setLogoUrl(reader.result);
+          reader.readAsDataURL(blob);
+        }
+      } catch (_) {}
+    };
+    loadLogo();
+  }, []);
 
   useEffect(() => {
     cargarBase();
@@ -134,16 +154,32 @@ export default function Reportes() {
       const { default: jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-      doc.setFontSize(16);
-      doc.text(title, 40, 40);
+      const W = doc.internal.pageSize.getWidth();
+
+      // Fondo encabezado (estilo consistente con boletines)
+      doc.setFillColor(104, 126, 122);
+      doc.rect(0, 0, W, 100, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.text(title, 40, 45);
+      
       const fecha = new Date();
       doc.setFontSize(10);
-      doc.text(`Generado: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, 40, 58);
-      doc.text(`Total alumnos: ${alumnos.length}`, 40, 72);
+      doc.text(`Generado: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, 40, 65);
+      doc.text(`Total alumnos: ${alumnos.length}`, 40, 80);
+
+      if (logoUrl) {
+        try {
+          const fmt = logoUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+          doc.addImage(logoUrl, fmt, W - 90, 15, 70, 70);
+        } catch (e) {}
+      }
+
       autoTable(doc, {
         head: [headCols],
         body: bodyRows,
-        startY: 110,
+        startY: 120,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [243, 244, 246], textColor: 20 },
         margin: { left: 40, right: 40 }

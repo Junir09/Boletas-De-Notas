@@ -69,7 +69,7 @@ function DocenteHome() {
 
   const cerrarSesion = () => {
     localStorage.removeItem('dni');
-    window.location.hash = '/acceso';
+    window.location.href = '/acceso';
   };
 
   return (

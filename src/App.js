@@ -7,17 +7,22 @@ import AlumnosHome from './Alumnos/AlumnosHome';
 import logoDefault from './assets/images/logo.png';
 
 function App() {
-  const [route, setRoute] = useState(window.location.hash || '#/');
+  const [route, setRoute] = useState(window.location.pathname === '/' ? '/' : window.location.pathname);
   const [valor, setValor] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [welcomeTitle, setWelcomeTitle] = useState('Bienvenidos Al Sistema de Boletas De Notas');
   const [logoUrl, setLogoUrl] = useState(logoDefault);
 
+  const navigate = (path) => {
+    window.history.pushState({}, '', path);
+    setRoute(path);
+  };
+
   useEffect(() => {
-    const handler = () => setRoute(window.location.hash || '#/');
-    window.addEventListener('hashchange', handler);
-    return () => window.removeEventListener('hashchange', handler);
+    const handler = () => setRoute(window.location.pathname);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
   }, []);
 
   
@@ -26,7 +31,11 @@ function App() {
     try {
       const cfg = JSON.parse(localStorage.getItem('config') || '{}');
       if (cfg && typeof cfg === 'object') {
-        if (cfg.welcomeTitle) setWelcomeTitle(String(cfg.welcomeTitle));
+        if (cfg.welcomeTitle) {
+          const t = String(cfg.welcomeTitle);
+          setWelcomeTitle(t);
+          document.title = t;
+        }
         if (cfg.logoDataUrl) setLogoUrl(String(cfg.logoDataUrl));
       }
     } catch {}
@@ -44,7 +53,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const v = valor.trim();
-    if (v.toLowerCase() === 'acceso') { setError(''); window.location.hash = '#/acceso'; return; }
+    if (v.toLowerCase() === 'acceso') { setError(''); navigate('/acceso'); return; }
     const msg = validar();
     if (msg) { setError(msg); return; }
     setError('');
@@ -58,7 +67,7 @@ function App() {
       const data = await resp.json();
       if (!resp.ok || !data.ok) { setError(data.error || 'DNI inválido'); return; }
       try { localStorage.setItem('dni', valor.trim()); } catch {}
-      window.location.hash = '#/alumnos';
+      navigate('/alumnos');
     } catch (err) {
       console.error(err);
       setError('No se pudo conectar al servidor');
@@ -69,7 +78,7 @@ function App() {
 
   // Navegación oculta: se retiraron los botones de login
 
-  if (route.startsWith('#/docente')) {
+  if (route.startsWith('/docente')) {
     return (
       <>
         <DocenteHome />
@@ -77,7 +86,7 @@ function App() {
     );
   }
 
-  if (route.startsWith('#/administrador')) {
+  if (route.startsWith('/administrador')) {
     return (
       <>
         <AdminHome />
@@ -85,7 +94,7 @@ function App() {
     );
   }
 
-  if (route.startsWith('#/alumnos')) {
+  if (route.startsWith('/alumnos')) {
     return (
       <>
         <AlumnosHome />
@@ -93,8 +102,8 @@ function App() {
     );
   }
 
-  if (route.startsWith('#/acceso')) {
-    const onSuccess = (to) => { window.location.hash = to; };
+  if (route.startsWith('/acceso')) {
+    const onSuccess = (to) => { navigate(to); };
     return (
       <>
         <LoginAvanzado onSuccess={onSuccess} />

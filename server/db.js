@@ -3,13 +3,22 @@
 
 const mysql = require('mysql2/promise');
 
+const DB_HOST = process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com';
+const DB_USER = process.env.DB_USER || 'tezPfXBLBczYeBc.root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '2aMfaqM0ahICCAv9'; // por defecto en XAMPP es vacío
+const DB_NAME = process.env.DB_NAME || 'test';
+const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000;
+
+// Habilitar SSL si la variable DB_SSL es 'true' O si el host es de TiDB Cloud
+const useSSL = process.env.DB_SSL === 'true' || DB_HOST.includes('tidbcloud');
+
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'boletas',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  ssl: (process.env.DB_SSL === 'true' || (process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud'))) ? {
+  host: DB_HOST,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
+  port: DB_PORT,
+  ssl: useSSL ? {
       minVersion: 'TLSv1.2',
       rejectUnauthorized: true
   } : undefined,
@@ -17,9 +26,6 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 });
-
-// Diagnóstico de conexión
-console.log(`Intentando conectar a DB: ${process.env.DB_NAME || 'boletas'} en ${process.env.DB_HOST || 'localhost'}`);
 
 module.exports = { pool };
 

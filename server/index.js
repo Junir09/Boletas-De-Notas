@@ -128,8 +128,8 @@ async function ensureActividades() {
 }
 ensureActividades();
 
-// Healthcheck moved to /api/status to avoid conflict with frontend
-app.get('/api/status', (req, res) => {
+// Healthcheck
+app.get('/', (req, res) => {
   res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
 });
 
@@ -1424,7 +1424,8 @@ app.delete('/api/curso-grado/:id', async (req, res) => {
 // Servir archivos estáticos del frontend (React)
 app.use(express.static(path.join(__dirname, '../build')));
 
-app.get('*all', (req, res) => {
+// Wildcard para React Router (compatible con Express 5 / path-to-regexp v8)
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 

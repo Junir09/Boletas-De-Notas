@@ -129,9 +129,9 @@ async function ensureActividades() {
 ensureActividades();
 
 // Healthcheck
-app.get('/', (req, res) => {
-  res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
-});
+// app.get('/', (req, res) => {
+//   res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
+// });
 
 // Docentes
 app.get('/api/docentes', async (req, res) => {

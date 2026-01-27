@@ -128,8 +128,8 @@ async function ensureActividades() {
 }
 ensureActividades();
 
-// Healthcheck
-app.get('/', (req, res) => {
+// Healthcheck moved to /api/status to avoid conflict with frontend
+app.get('/api/status', (req, res) => {
   res.json({ ok: true, name: 'Boletas API', version: '1.0.0' });
 });
 

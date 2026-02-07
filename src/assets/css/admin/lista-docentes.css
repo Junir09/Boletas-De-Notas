@@ -218,6 +218,30 @@
   box-shadow: 0 10px 22px rgba(0,0,0,0.25);
 }
 
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .lista-docentes {
+    padding: 16px;
+  }
+  .lista-docentes h2 {
+    font-size: 1.5rem;
+  }
+  .lista-docentes .table-wrap {
+    overflow-x: auto;
+  }
+  .lista-docentes table {
+    min-width: max-content;
+  }
+  .lista-docentes thead th,
+  .lista-docentes tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  .lista-docentes .inline-actions {
+    gap: 6px;
+  }
+}
+
 /* Cancelar */
 .lista-docentes .btn-cancel {
   background: var(--color-fondo-alt);

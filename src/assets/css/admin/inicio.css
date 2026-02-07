@@ -183,3 +183,47 @@ html, body {
   color: var(--color-text-muted);
   font-size: 0.95rem;
 }
+
+/* --- Responsive Móvil Admin --- */
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .content {
+    padding: 16px 18px;
+  }
+  .content h1 {
+    font-size: 1.8rem;
+  }
+  .content p {
+    font-size: 0.98rem;
+  }
+  .inicio-container {
+    padding: 6px 0;
+  }
+  .funciones-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: none;
+  }
+  .funcion-card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+  .funcion-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+  }
+  .funcion-card h3 {
+    font-size: 1.15rem;
+  }
+  .funcion-card p {
+    font-size: 0.95rem;
+  }
+  .ayuda-section {
+    padding: 16px;
+    margin-top: 20px;
+  }
+}

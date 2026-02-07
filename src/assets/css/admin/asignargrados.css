@@ -45,6 +45,8 @@
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-weak);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .asignar-grados .search-box input {
@@ -55,6 +57,8 @@
   border: 1px solid var(--color-border);
   background: var(--color-white);
   color: var(--color-text);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .asignar-grados .search-box input:focus {
@@ -64,7 +68,7 @@
 }
 
 .asignar-grados .search-suggestions {
-  margin-top: -28px;
+  margin-top: 8px;
   margin-bottom: 8px;
   background: var(--color-card-bg);
   border-radius: 0 0 14px 14px;
@@ -73,6 +77,8 @@
   box-shadow: var(--shadow-weak);
   max-height: 220px;
   overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .asignar-grados .search-suggestion-item {
@@ -258,6 +264,45 @@
 /****************************************************
  * HIGHLIGHT
 ****************************************************/
+
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .asignar-grados {
+    padding: 16px;
+  }
+  .asignar-grados h2 {
+    font-size: 1.6rem;
+  }
+  .asignar-grados .search-box {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .asignar-grados .inline-actions,
+  .asignar-grados .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .asignar-grados .inline-actions select,
+  .asignar-grados .modal-card select,
+  .asignar-grados .inline-actions button,
+  .asignar-grados .actions button,
+  .asignar-grados .modal-actions button {
+    width: 100%;
+  }
+  .asignar-grados .table {
+    overflow-x: auto;
+  }
+  .asignar-grados table {
+    min-width: max-content;
+  }
+  .asignar-grados thead th,
+  .asignar-grados tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
 .asignar-grados tr.highlight {
   animation: highlightPulse 1.2s ease;
 }

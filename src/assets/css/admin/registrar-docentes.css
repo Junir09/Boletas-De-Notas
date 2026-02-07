@@ -127,3 +127,20 @@
   border-radius: 10px;
   font-size: 0.92rem;
 }
+
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .registrar-docentes {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  .registrar-docentes h2 {
+    font-size: 1.6rem;
+  }
+  .registrar-docentes .actions {
+    justify-content: stretch;
+  }
+  .registrar-docentes button {
+    width: 100%;
+  }
+}

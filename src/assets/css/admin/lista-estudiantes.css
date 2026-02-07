@@ -351,3 +351,37 @@
   from { opacity: 0; transform: translateY(20px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .lista-estudiantes {
+    padding: 16px;
+  }
+  .lista-estudiantes h2 {
+    font-size: 1.6rem;
+  }
+  .lista-estudiantes .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .lista-estudiantes .filters {
+    width: 100%;
+    gap: 10px;
+  }
+  .lista-estudiantes .filters select,
+  .lista-estudiantes .btn-bulk-delete {
+    width: 100%;
+  }
+  .lista-estudiantes .table-wrap {
+    overflow-x: auto;
+  }
+  .lista-estudiantes .table {
+    min-width: max-content;
+  }
+  .lista-estudiantes .table thead th,
+  .lista-estudiantes .table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}

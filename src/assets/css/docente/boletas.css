@@ -98,7 +98,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-height: thin;
+  scrollbar-width: thin;
 }
 
 /* Cuando no hay actividades, la tabla debe ocupar todo el ancho y la última columna crecer */

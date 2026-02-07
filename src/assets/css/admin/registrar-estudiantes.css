@@ -198,3 +198,40 @@
   display: flex;
   justify-content: center;
 }
+
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .registrar-estudiantes {
+    padding: 16px;
+  }
+  .registrar-estudiantes .header-section h2 {
+    font-size: 1.6rem;
+  }
+  .registrar-estudiantes .card {
+    padding: 18px;
+    border-radius: 12px;
+  }
+  .registrar-estudiantes .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .registrar-estudiantes .actions.right {
+    justify-content: stretch;
+  }
+  .registrar-estudiantes .actions-row {
+    gap: 10px;
+  }
+  .registrar-estudiantes button {
+    width: 100%;
+  }
+  .registrar-estudiantes .file-input {
+    padding: 16px;
+  }
+  .registrar-estudiantes .modal-card {
+    width: min(360px, 96%);
+    padding: 22px 24px;
+  }
+  .registrar-estudiantes .modal-card .modal-actions {
+    width: 100%;
+  }
+}

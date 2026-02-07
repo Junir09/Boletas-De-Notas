@@ -221,6 +221,45 @@
   to { opacity: 1; }
 }
 
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .cursos {
+    padding: 16px;
+  }
+  .cursos h2 {
+    font-size: 1.6rem;
+  }
+  .cursos h3 {
+    font-size: 1.1rem;
+  }
+  .cursos .actions {
+    flex-wrap: wrap;
+  }
+  .cursos .actions-row {
+    gap: 10px;
+  }
+  .cursos button {
+    width: 100%;
+  }
+  .cursos .table {
+    overflow-x: auto;
+  }
+  .cursos .table table {
+    min-width: max-content;
+  }
+  .cursos .table thead th,
+  .cursos .table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  .cursos .inline-actions {
+    flex-wrap: wrap;
+  }
+  .cursos .inline-actions button {
+    width: 100%;
+  }
+}
+
 .cursos .modal-card {
   background: var(--color-card-bg);
   padding: 28px 32px;

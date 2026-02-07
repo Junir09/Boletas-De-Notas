@@ -23,7 +23,7 @@ export default function Cursos({ alumno, cursos, onIrBoletines }) {
   })();
 
   return (
-    <div>
+    <div className="alumno-cursos">
       {alumno ? (
         <h1>Bienvenido {alumno.apellidos} {alumno.nombres}</h1>
       ) : (
@@ -35,7 +35,7 @@ export default function Cursos({ alumno, cursos, onIrBoletines }) {
         <div>
           {grupos.map((g, idx) => (
             <div key={idx} style={{ marginBottom: 16 }}>
-              <h3>{`Docente: ${g.nombre}`}</h3>
+              <h3>{`Docente: ${g.nombre} `}</h3>
               <div className="cursos-grid">
                 {g.cursos.map(c => (
                   <div key={c.id} className="curso-card" onClick={() => onIrBoletines && onIrBoletines(c.id)}>

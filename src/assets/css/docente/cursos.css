@@ -270,3 +270,45 @@
   from { opacity: 0; transform: translateY(20px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ---------- Responsive Móvil ---------- */
+@media (max-width: 768px) {
+  .cursos-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .curso-card {
+    padding: 16px;
+  }
+  .curso-card h3 {
+    font-size: 1.05rem;
+  }
+  .curso-card p {
+    font-size: 0.85rem;
+  }
+  .inline-actions {
+    gap: 10px;
+  }
+  .inline-actions .badge {
+    width: 100%;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+  }
+  .modal-card {
+    width: min(900px, 96vw);
+    max-height: 80vh;
+  }
+  .modal-header h3 {
+    font-size: 1.05rem;
+  }
+  .modal-body {
+    padding: 16px;
+  }
+  .estudiantes-table thead th,
+  .estudiantes-table tbody td {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+}

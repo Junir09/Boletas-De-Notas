@@ -102,3 +102,34 @@
   font-size: 0.95rem;
   color: var(--color-text-muted);
 }
+
+/* ---------- Responsive Móvil ---------- */
+@media (max-width: 768px) {
+  .alumno-cursos > h1 {
+    font-size: 1.5rem;
+  }
+  .alumno-cursos > h2 {
+    font-size: 1rem;
+  }
+  .alumno-cursos .cursos-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .alumno-cursos .curso-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .alumno-cursos .curso-card h3 {
+    font-size: 1rem;
+  }
+  .alumno-cursos .curso-card p {
+    font-size: 0.8rem;
+  }
+  .alumno-cursos .curso-card::after {
+    bottom: 10px;
+    right: 12px;
+    font-size: 0.7rem;
+  }
+}

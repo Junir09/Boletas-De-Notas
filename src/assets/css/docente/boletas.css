@@ -463,3 +463,39 @@
   from { opacity: 0; transform: translateY(20px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ---------- Responsive Móvil ---------- */
+@media (max-width: 768px) {
+  .notas-form {
+    margin-top: 16px;
+  }
+  .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .notas-form select,
+  .notas-form button {
+    width: 100%;
+  }
+  .estudiantes-table {
+    margin-top: 12px;
+  }
+  .estudiantes-table thead th {
+    padding: 12px;
+    font-size: 0.8rem;
+  }
+  .estudiantes-table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  .nota-input {
+    width: 64px;
+    padding: 6px 4px;
+    font-size: 0.9rem;
+  }
+  .modal-card {
+    width: min(900px, 96vw);
+    max-height: 80vh;
+  }
+}

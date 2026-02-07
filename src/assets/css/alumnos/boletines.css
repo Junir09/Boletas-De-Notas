@@ -210,3 +210,30 @@
   color: var(--color-text-muted);
   padding: 18px;
 }
+
+/* ---------- Responsive Móvil ---------- */
+@media (max-width: 768px) {
+  .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .inline-actions label {
+    font-size: 0.85rem;
+  }
+  .inline-actions select,
+  .inline-actions button {
+    width: 100%;
+  }
+  .estudiantes-table {
+    margin-top: 12px;
+  }
+  .estudiantes-table thead th {
+    padding: 12px;
+    font-size: 0.75rem;
+  }
+  .estudiantes-table tbody td {
+    padding: 12px;
+    font-size: 0.88rem;
+  }
+}

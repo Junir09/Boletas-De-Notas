@@ -33,3 +33,23 @@
   z-index: 5;
   box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
+
+/* ---------- Responsive Móvil ---------- */
+@media (max-width: 768px) {
+  .estudiantes-table thead th {
+    padding: 12px;
+    font-size: 0.8rem;
+  }
+  .estudiantes-table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  /* Filtros (notas-form en Reportes) */
+  .notas-form select,
+  .notas-form button {
+    width: 100%;
+  }
+  .scroll-area {
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -90,3 +90,26 @@ html, body {
   line-height: 1.6;
   margin: 8px 0;
 }
+
+/* --- Responsive Móvil --- */
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .content {
+    padding: 16px 18px;
+  }
+  .alumnos-content {
+    padding: 16px;
+  }
+  .alumnos-content h1 {
+    font-size: 1.6rem;
+  }
+  .alumnos-content h2 {
+    font-size: 1rem;
+  }
+  .alumnos-content p {
+    font-size: 0.95rem;
+  }
+}

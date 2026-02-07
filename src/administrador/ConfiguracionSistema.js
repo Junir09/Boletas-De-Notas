@@ -635,41 +635,6 @@ function ConfiguracionSistema() {
                     <ZoomIn size={20} onClick={() => setCropScale(s => Math.min(3, s + 0.1))} style={{cursor: 'pointer'}} />
                 </div>
               </div>
-
-              <div className="preview-section">
-                <h4>Vista previa Login</h4>
-                <div className="login-mockup">
-                  <div className="login-mockup-content">
-                    <div className="login-mockup-logo-container">
-                        <div style={{
-                            width: '100%', 
-                            height: '100%', 
-                            overflow: 'hidden', 
-                            position: 'relative',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: '#fff',
-                            borderRadius: '50%'
-                        }}>
-                             <img 
-                                src={cropImage} 
-                                style={{
-                                    transform: `translate(${cropPos.x}px, ${cropPos.y}px) scale(${cropScale})`,
-                                    transformOrigin: 'center center'
-                                }} 
-                                alt="Preview"
-                             />
-                        </div>
-                    </div>
-                    <div className="login-mockup-inputs">
-                        <div className="mockup-line"></div>
-                        <div className="mockup-line"></div>
-                        <div className="mockup-btn"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
             
             <div className="configuracion-modal-actions">

@@ -63,3 +63,22 @@
   background: rgba(255,255,255,0.12);
   color: #fff;
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    height: auto;
+    position: relative;
+    top: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 14px 12px;
+  }
+  .sidebar-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .sidebar-menu button {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}

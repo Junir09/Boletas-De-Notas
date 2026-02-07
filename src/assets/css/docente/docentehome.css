@@ -151,3 +151,51 @@ html, body {
   line-height: 1.6;
   margin: 8px 0;
 }
+
+/* Botones en sidebar (DocenteHome usa button) */
+.docente-sidebar .sidebar-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 11px 12px;
+  font-size: 15px;
+  color: var(--color-sidebar-muted);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.docente-sidebar .sidebar-menu button:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--color-white);
+}
+.docente-sidebar .sidebar-menu button.active {
+  background: var(--color-hover);
+  color: var(--color-white);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+}
+
+/* --- Responsive Móvil Docente --- */
+@media (max-width: 768px) {
+  .docente-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .docente-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    padding: 14px 12px;
+    position: static;
+  }
+  .docente-content {
+    padding: 16px 18px;
+    min-height: auto;
+  }
+  .docente-content h1 {
+    font-size: 1.6rem;
+  }
+  .docente-content p {
+    font-size: 0.95rem;
+  }
+}
